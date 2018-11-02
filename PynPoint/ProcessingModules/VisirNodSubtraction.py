@@ -84,12 +84,20 @@ class VisirNodSubtractionModule(ProcessingModule):
                 posang = np.zeros(posang1.shape)
 
                 for ii in range(self.m_cubesize):
-                    posang[ii] = posang2[ii] - posang1[ii]
+                    posang[ii] = 50 # posang2[ii] - posang1[ii]
                     cube1 = signal_in[ii + (i+1)*self.m_cubesize, :, :]
                     im_rot = rotate(input=cube1,
                                     angle=posang[ii],
                                     reshape=False)
-            return im_rot
+
+                if i == 0:
+                    data_out = signal_in[0:self.m_cubesize, :, :]
+                    data_out = np.append(data_out, im_rot)
+                else:
+                    data_out = np.append(data_out, signal_in[i*self.m_cubesize, :, :])
+                    data_out = np.append(data_out, im_rot)
+
+            return data_out
 
             # Change the attribute Posangangle
 
