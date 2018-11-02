@@ -59,3 +59,9 @@ from PynPoint.ProcessingModules.DetectionLimits import ContrastCurveModule
 from PynPoint.ProcessingModules.BasicOperations import SubtractImagesModule, \
                                                        AddImagesModule, \
                                                        RotateImagesModule
+
+from PynPoint.ProcessingModules.VisirNodSubtraction import VisirNodSubtractionModule
+
+from PynPoint.ProcessingModules.VisirInitialiazation import VisirInitializationModule
+
+from PynPoint.ProcessingModules.VisirInverter import VisirInverterModule
