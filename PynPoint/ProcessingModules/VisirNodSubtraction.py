@@ -72,6 +72,9 @@ class VisirNodSubtractionModule(ProcessingModule):
             # self.m_posang_start[0]
 
             data_out = np.zeros(signal_in.shape)
+            im_rot = np.zeros((self.m_cubesize,
+                               signal_in.shape[1],
+                               signal_in.shape[2]))
 
             for i in range(0, self.m_no_cube, 2):
                 posang1 = np.linspace(start=0,
@@ -88,14 +91,15 @@ class VisirNodSubtractionModule(ProcessingModule):
                 for ii in range(self.m_cubesize):
                     posang[ii] = 50  # posang2[ii] - posang1[ii]
                     cube1 = signal_in[ii + (i+1)*self.m_cubesize, :, :]
-                    im_rot = rotate(input=cube1,
-                                    angle=posang[ii],
-                                    reshape=False)
+                    # print 'cube1 shape: ', cube1.shape
+                    im_rot[ii, :, :] = rotate(input=cube1,
+                                              angle=posang[ii],
+                                              reshape=False)
 
-                data_out[0:self.m_cubesize + i*self.m_cubesize, :, :] = \
-                    signal_in[0:self.m_cubesize, :, :]
-                data_out[0:self.m_cubesize + (i+1)*self.m_cubesize, :, :] = \
-                    im_rot[:, :, :]
+                    data_out[ii + i*self.m_cubesize, :, :] = \
+                        signal_in[ii, :, :]
+                    data_out[ii + (i+1)*self.m_cubesize, :, :] = \
+                        im_rot[ii, :, :]
 
             return data_out
 
