@@ -38,6 +38,11 @@ Documentation
 
 Documentation can be found at `http://pynpoint.readthedocs.io <http://pynpoint.readthedocs.io>`_, including installation instructions, details on the architecture of PynPoint, and end-to-end example for data obtained with dithering, and a description of the various processing modules and parameters.
 
+Installation from Github.com:
+- Clone the repository in the desired folder
+- Add 'export PYTHONPATH="/path/to/the/repos"' in the config file of your virtualenv (in /bin/activate)
+Then restart the virtualenv and it should be up and running
+
 Mailing list
 ------------
 
