@@ -17,6 +17,7 @@ import sys
 from PynPoint.Core.Processing import ProcessingModule
 from scipy.ndimage import rotate
 
+
 class VisirNodSubtractionModule(ProcessingModule):
     def __init__(self,
                  name_in="Nod_sub",
@@ -48,7 +49,8 @@ class VisirNodSubtractionModule(ProcessingModule):
         sys.stdout.flush()
 
         self.m_cubesize = self.m_image_in_port1.get_attribute("NFRAMES")[0]
-        self.m_posang_start = self.m_image_in_port1.get_attribute("PARANG_START")
+        self.m_posang_start = \
+            self.m_image_in_port1.get_attribute("PARANG_START")
         self.m_posang_end = self.m_image_in_port1.get_attribute("PARANG_END")
         # Check that all NFRAMES are the same
 
@@ -69,7 +71,7 @@ class VisirNodSubtractionModule(ProcessingModule):
 
             # self.m_posang_start[0]
 
-            # posang = np.zeros((self.m_no_cube, self.m_cubesize))
+            data_out = np.zeros(signal_in.shape)
 
             for i in range(0, self.m_no_cube, 2):
                 posang1 = np.linspace(start=0,
@@ -84,18 +86,16 @@ class VisirNodSubtractionModule(ProcessingModule):
                 posang = np.zeros(posang1.shape)
 
                 for ii in range(self.m_cubesize):
-                    posang[ii] = 50 # posang2[ii] - posang1[ii]
+                    posang[ii] = 50  # posang2[ii] - posang1[ii]
                     cube1 = signal_in[ii + (i+1)*self.m_cubesize, :, :]
                     im_rot = rotate(input=cube1,
                                     angle=posang[ii],
                                     reshape=False)
 
-                if i == 0:
-                    data_out = signal_in[0:self.m_cubesize, :, :]
-                    data_out = np.append(data_out, im_rot)
-                else:
-                    data_out = np.append(data_out, signal_in[i*self.m_cubesize, :, :])
-                    data_out = np.append(data_out, im_rot)
+                data_out[0:self.m_cubesize + i*self.m_cubesize, :, :] = \
+                    signal_in[0:self.m_cubesize, :, :]
+                data_out[0:self.m_cubesize + (i+1)*self.m_cubesize, :, :] = \
+                    im_rot[:, :, :]
 
             return data_out
 
