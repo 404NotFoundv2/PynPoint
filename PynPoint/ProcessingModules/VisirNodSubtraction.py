@@ -1,6 +1,11 @@
 '''
-Module that subtracts the different Nod positions from each other.
-This Module should run *after* the chop subtraction.
+Module that 'subtracts' the different Nod positions from each other.
+Before the 'subtraction', the module derotates the images according to their
+POSANG angle.
+
+This Module should run *after* the chop subtraction and after
+VisirInverterModule. VisirInverter inverts the images such that here they are
+actually added, not subtracted.
 
 It assumes that the number of frames taken in every Nod position is the same.
 
@@ -10,7 +15,7 @@ It assumes that the number of frames taken in every Nod position is the same.
 import numpy as np
 import sys
 from PynPoint.Core.Processing import ProcessingModule
-
+from scipy.ndimage import rotate
 
 class VisirNodSubtractionModule(ProcessingModule):
     def __init__(self,
@@ -43,14 +48,46 @@ class VisirNodSubtractionModule(ProcessingModule):
         sys.stdout.flush()
 
         self.m_cubesize = self.m_image_in_port1.get_attribute("NFRAMES")[0]
-        # - self.m_subtract)
-
+        self.m_posang_start = self.m_image_in_port1.get_attribute("PARANG_START")
+        self.m_posang_end = self.m_image_in_port1.get_attribute("PARANG_END")
         # Check that all NFRAMES are the same
 
-        data = self.m_image_in_port1.get_all()
-        self.shape_d = data.shape
+        # data = self.m_image_in_port1.get_all()
+        # self.shape_d = data.shape
+        # self.m_no_cube = int(len(data[:, 0, 0]) / self.m_cubesize)
 
-        self.m_no_cube = int(len(data[:, 0, 0]) / self.m_cubesize)
+        def posangrot(signal_in):
+            '''
+            This function interpolates the Posang angle for all images.
+            '''
+
+            '''
+            print '\n', 'Posang start: ', self.m_posang_start, '\n'
+            print '\n', 'Posang end: ', self.m_posang_end, '\n'
+            print '\n', 'Number of cubes: ', self.m_no_cube, '\n'
+            '''
+
+            # self.m_posang_start[0]
+
+            posang = np.zeros((self.m_no_cube, self.m_cubesize))
+
+            for i in range(self.m_no_cube):
+                posang[i, :] = np.linspace(start=0,
+                                           stop=(self.m_posang_end[i] -
+                                                 self.m_posang_start[i]),
+                                           num=self.m_cubesize)
+
+                for ii in range(self.m_cubesize):
+                    cube1 = signal_in[ii + i*self.m_cubesize, :, :]
+                    if i == 0:
+                        continue
+                    else:
+                        im_rot = rotate(input=cube1,
+                                    angle=posang[ii],
+                                    reshape=False)
+            return im_rot
+
+            # Change the attribute Posangangle
 
         def sepcube(signal_in):
             '''
@@ -68,8 +105,8 @@ class VisirNodSubtractionModule(ProcessingModule):
             :return: data_output
             '''
 
-            # print '\n', self.shape_d, '\n'
-            # print '\n', self.m_cubesize, '\n'
+            # self.shape_d = signal_in.shape
+            # self.m_no_cube = int(len(signal_in[:, 0, 0]) / self.m_cubesize)
 
             data_output = np.zeros((self.m_cubesize*self.m_no_cube/2,
                                     self.shape_d[1], self.shape_d[2]),
@@ -85,7 +122,12 @@ class VisirNodSubtractionModule(ProcessingModule):
 
             return data_output
 
-        data_output = sepcube(signal_in=self.m_image_in_port1.get_all())
+        signal = self.m_image_in_port1.get_all()
+        self.shape_d = signal.shape
+        self.m_no_cube = int(len(signal[:, 0, 0]) / self.m_cubesize)
+
+        data_rotate = posangrot(signal_in=signal)
+        data_output = sepcube(signal_in=data_rotate)
 
         self.m_image_out_port1.set_all(data_output)
 
