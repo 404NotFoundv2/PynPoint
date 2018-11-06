@@ -48,8 +48,8 @@ class VisirInverterModule(ProcessingModule):
 
         def inverter(signal_in):
             '''
-            This function finds the number of images taken every Nod position.
-            Since the different Chop positions are already subtracted, we are
+            This function finds the number of images taken every Nod position
+            and inverts the second nod position by multiplying it with (-1).
 
             :return: data_output
             '''

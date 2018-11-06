@@ -2,6 +2,7 @@
 Create from a table-like fits file a 3-D cube with the number
 of the frame as 3rd axis. Sort them on timestamps written in
 every image header. Output gives 2 files, ChopA and ChopB.
+THe output files are ordered by date observed.
 
 The first HDU is not included(it contains no data) just as
 the last one, which is an average all chop images (see the manual).
@@ -29,7 +30,7 @@ import sys
 import subprocess
 import glob
 import multiprocessing as mp
-import time
+# import time
 # from functools import partial
 
 
@@ -88,7 +89,7 @@ class VisirInitializationModule():
             try:
                 from pathos.multiprocessing import ProcessPool
 
-                start_time = time.time()
+                # start_time = time.time()
                 pool = ProcessPool(mp.cpu_count())
 
                 sys.stdout.write('\rRunning VISIRInitializationModule... ' +
@@ -150,7 +151,7 @@ class VisirInitializationModule():
         hour = np.zeros((lenf_min), dtype=int)
         minute = np.zeros((lenf_min), dtype=int)
         second = np.zeros((lenf_min), dtype=float)
-        time = np.zeros((lenf_min), dtype=float)
+        time1 = np.zeros((lenf_min), dtype=float)
         lista = np.zeros(shape=(lenf_min, ypixel, xpixel), dtype=np.float32)
         listb = np.zeros(shape=(lenf_min, ypixel, xpixel), dtype=np.float32)
 
@@ -161,9 +162,9 @@ class VisirInitializationModule():
             hour[a] = int(x[:2])
             minute[a] = int(x[3:5])
             second[a] = float(x[6:])
-            time[a] = hour[a]*60*60 + minute[a]*60 + second[a]
+            time1[a] = hour[a]*60*60 + minute[a]*60 + second[a]
 
-        time_s = np.sort(time)
+        time_s = np.sort(time1)
 
         '''
         This loop will do the sorting on time and find the correct chop
@@ -243,9 +244,12 @@ class VisirInitializationModule():
         sys.stdout.write("Running VISIRInitializationModule...")
         sys.stdout.flush()
 
+        # Uncompress the files if they are compressed
         self.uncompress()
 
+        # Write every NOD position as 2 CHOP positions
         self.files = glob.glob(self.image_in_tag + '*.fits')
+        self.files = sorted(self.files)
 
         for j in range(len(self.files)):
             percentage = int(float(j)/len(self.files)*100)
