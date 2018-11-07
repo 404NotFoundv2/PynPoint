@@ -109,7 +109,8 @@ class VisirNodSubtractionModule(ProcessingModule):
 
         def sepcube(signal_in):
             '''
-            This function finds the number of images taken every Nod position.
+            This function finds the number of images taken every Nod position
+            and adds the different Nod positions.
             Since the different Chop positions are already subtracted, we are
             left with half of all the images for every Nod position.
 
