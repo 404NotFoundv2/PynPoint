@@ -70,8 +70,7 @@ class VisirNodSubtractionModule(ProcessingModule):
             im_rot = np.zeros((self.m_cubesize,
                                signal_in.shape[1],
                                signal_in.shape[2]))
-            #self.m_posang = np.zeros((self.m_no_cube*self.m_cubesize))
-            self.m_posang =np.zeros((self.m_cubesize))
+            self.m_posang = np.zeros((self.m_cubesize*self.m_no_cube/2))
 
             for i in range(0, self.m_no_cube, 2):
                 posang1 = np.linspace(start=0,
@@ -98,17 +97,14 @@ class VisirNodSubtractionModule(ProcessingModule):
                     data_out[ii + (i+1)*self.m_cubesize, :, :] = \
                         im_rot[ii, :, :]
 
-                    if i == 0:
-                        self.m_posang[ii] = posang1[ii] + self.m_posang_start[i]
-                    #else:
-                    #    self.m_posang[ii + (i/2)*self.m_cubesize] = posang1[ii] + \
-                    #            self.m_posang_start[i]
-                    #self.m_posang[ii + (i+1)*self.m_cubesize] = posang1[ii] + \
-                    #    self.m_posang_start[i+1]
-                    # self.m_posang[ii] = posang1[ii] + self.m_posang_start[i]
+                    if i % 2 == 0:
+                        self.m_posang[ii + i/2*self.m_cubesize] = posang1[ii] \
+                                + self.m_posang_start[i]
+            '''
             print '\n', 'Shape of self.m_posang is: ', self.m_posang.shape
             print '\n', 'Shape of self.m_cubesize : ', self.m_cubesize
             print '\n', 'Shape of data_out: ', data_out.shape
+            '''
             return data_out
 
         def sepcube(signal_in):
