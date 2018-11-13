@@ -24,13 +24,13 @@ Run the module by running VisirInitializationModule(image_in_tag).run()
 @Jasper Jonker
 '''
 
-import numpy as np
-from astropy.io import fits
 import sys
 import subprocess
 import glob
 import multiprocessing as mp
-# import time
+import datetime
+import numpy as np
+from astropy.io import fits
 # from functools import partial
 
 
@@ -249,7 +249,7 @@ class VisirInitializationModule():
 
         # Write every NOD position as 2 CHOP positions
         self.files = glob.glob(self.image_in_tag + '*.fits')
-        self.files = sorted(self.files)
+        self.files = np.sort(self.files)
 
         for j in range(len(self.files)):
             percentage = int(float(j)/len(self.files)*100)
@@ -257,11 +257,13 @@ class VisirInitializationModule():
                              '({})%'.format(percentage))
             sys.stdout.flush()
 
+            un_name = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S:%f")
+
             self.rewrite(image_in=self.files[j],
                          image_outa=self.image_out_1[:-5] + '_nod' +
-                         str(j) + '.fits',
+                         un_name + '.fits',
                          image_outb=self.image_out_2[:-5] + '_nod' +
-                         str(j) + '.fits',
+                         un_name + '.fits',
                          mode=self.mode)
 
         sys.stdout.write('\rRunning VISIRInitializationModule... ' +

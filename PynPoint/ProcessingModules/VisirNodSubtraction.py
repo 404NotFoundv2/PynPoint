@@ -13,11 +13,11 @@ and that the star is centered.
 @Jasper Jonker
 '''
 
-import numpy as np
+import warnings
 import sys
+import numpy as np
 from PynPoint.Core.Processing import ProcessingModule
 from scipy.ndimage import rotate
-import warnings
 
 
 class VisirNodSubtractionModule(ProcessingModule):
@@ -52,6 +52,9 @@ class VisirNodSubtractionModule(ProcessingModule):
             self.m_image_in_port1.get_attribute("PARANG_START")
         self.m_posang_end = self.m_image_in_port1.get_attribute("PARANG_END")
 
+        #print '\n', "self.m_posang_start = ", self.m_posang_start
+        #print '\n', "self.m_posang_end = ", self.m_posang_end
+
         for i in range(len(self.m_image_in_port1.get_attribute("NFRAMES"))):
             if self.m_cubesize != \
                     self.m_image_in_port1.get_attribute("NFRAMES")[i]:
@@ -65,6 +68,11 @@ class VisirNodSubtractionModule(ProcessingModule):
             It takes NODB and derotates it to get the same rotation as
             NODA has.
             '''
+
+            if signal_in.shape[0]/self.m_cubesize % 2 == 1:
+                warnings.warn("The number of Nod positions is not even, "
+                              "try removing a single Nod position (one "
+                              " fits file)")
 
             data_out = np.zeros(signal_in.shape)
             im_rot = np.zeros((self.m_cubesize,
@@ -97,14 +105,16 @@ class VisirNodSubtractionModule(ProcessingModule):
                     data_out[ii + (i+1)*self.m_cubesize, :, :] = \
                         im_rot[ii, :, :]
 
-                    if i % 2 == 0:
-                        self.m_posang[ii + i/2*self.m_cubesize] = posang1[ii] \
-                                + self.m_posang_start[i]
+                    self.m_posang[ii + i/2*self.m_cubesize] = posang1[ii] \
+                            + self.m_posang_start[i]
             '''
-            print '\n', 'Shape of self.m_posang is: ', self.m_posang.shape
             print '\n', 'Shape of self.m_cubesize : ', self.m_cubesize
             print '\n', 'Shape of data_out: ', data_out.shape
             '''
+            #print '\n', 'self.m_posang: ', self.m_posang
+            #print '\n', 'self.signal.shape: ', signal.shape
+            #print '\n', 'shape of self.m_posang: ', self.m_posang.shape
+
             return data_out
 
         def sepcube(signal_in):
@@ -126,7 +136,7 @@ class VisirNodSubtractionModule(ProcessingModule):
 
             data_output = np.zeros((self.m_cubesize*self.m_no_cube/2,
                                     self.shape_d[1], self.shape_d[2]),
-                                   np.float32)
+                                   dtype=np.float32)
 
             for i in range(self.m_no_cube/2):
                 k = self.m_cubesize
