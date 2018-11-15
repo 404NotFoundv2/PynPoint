@@ -16,7 +16,8 @@ class VisirInverterModule(ProcessingModule):
     def __init__(self,
                  name_in="Inverter",
                  image_in_tag="image_in",
-                 image_out_tag="image_out"):
+                 image_out_tag="image_out",
+                 nod_type='ABBA'):
         '''
         Constructor of the VisirNodSubtractionModule
         :param name_in: Unique name of the instance
@@ -28,11 +29,15 @@ class VisirInverterModule(ProcessingModule):
         :param subtract: Number of images skipped for each cube (by e.g. using
         removing the first frame of every nod position, then set subtract to 1)
         :param subtract: int
+        :param nod_type: Type of nodding pattern used. Or ABAB or ABBA
+        :type nod_type: str, or ABBA or ABAB
 
         :return: None
         '''
 
         super(VisirInverterModule, self).__init__(name_in)
+
+        self.m_nod_type = nod_type
 
         # Ports
         self.m_image_in_port1 = self.add_input_port(image_in_tag)
@@ -58,15 +63,31 @@ class VisirInverterModule(ProcessingModule):
 
             data_output = np.zeros(signal_in.shape, np.float32)
 
-            for i in range(self.m_no_cube):
-                if i % 2 == 0:
-                    for ii in range(self.m_cubesize):
-                        data_output[ii + i*self.m_cubesize, :, :] = \
-                            signal_in[ii + i*self.m_cubesize, :, :]
-                else:
-                    for ii in range(self.m_cubesize):
-                        data_output[ii + i*self.m_cubesize, :, :] = \
-                           (-1)*signal_in[ii + i*self.m_cubesize, :, :]
+            if self.m_nod_type == 'ABAB':
+                for i in range(self.m_no_cube):
+                    if i % 2 == 0:
+                        for ii in range(self.m_cubesize):
+                            data_output[ii + i*self.m_cubesize, :, :] = \
+                                signal_in[ii + i*self.m_cubesize, :, :]
+                    else:
+                        for ii in range(self.m_cubesize):
+                            data_output[ii + i*self.m_cubesize, :, :] = \
+                               (-1)*signal_in[ii + i*self.m_cubesize, :, :]
+
+            elif self.m_nod_type == 'ABBA':
+                for i in range(self.m_no_cube):
+                    if i % 4 == 0 or i % 4 == 3:
+                        for ii in range(self.m_cubesize):
+                            data_output[ii + i*self.m_cubesize, :, :] = \
+                                signal_in[ii + i*self.m_cubesize, :, :]
+                    elif i % 4 == 1 or i % 4 == 2:
+                        for ii in range(self.m_cubesize):
+                            data_output[ii + i*self.m_cubesize, :, :] = \
+                               (-1)*signal_in[ii + i*self.m_cubesize, :, :]
+
+            else:
+                raise TypeError("Parameter nod_type should be 'ABAB' or"
+                                "'ABBA'")
 
             return data_output
 
