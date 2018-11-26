@@ -62,6 +62,6 @@ from PynPoint.ProcessingModules.BasicOperations import SubtractImagesModule, \
 
 from PynPoint.ProcessingModules.VisirNodSubtraction import VisirNodSubtractionModule
 
-from PynPoint.ProcessingModules.VisirInitialiazation import VisirInitializationModule
+from PynPoint.ProcessingModules.VisirInitialization import VisirInitializationModule
 
 from PynPoint.ProcessingModules.VisirInverter import VisirInverterModule
