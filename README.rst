@@ -41,6 +41,11 @@ Documentation can be found at `http://pynpoint.readthedocs.io <http://pynpoint.r
 Installation from Github.com:
 
 * Clone the repository in the desired folder
+
+.. code-block:: bash
+
+        git clone https://github.com/404NotFoundv2/PynPoint.git
+
 * Create a virtualenv: 
 
 .. code-block:: bash
