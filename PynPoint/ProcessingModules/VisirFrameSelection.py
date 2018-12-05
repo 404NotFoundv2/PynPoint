@@ -13,7 +13,7 @@ class VisirFrameSelectionModule(ProcessingModule):
                  name_in="frame_selection",
                  image_in_tag="image_in",
                  image_out_tag="image_out",
-                 aperature="0.3"):
+                 aperture="0.3"):
         '''
         Constructor of the VisirFrameSelectionModule
         :param name_in: Unique name of the instance
@@ -31,7 +31,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_image_in_port = self.add_input_port(image_in_tag)
         self.m_image_out_port = self.add_output_port(image_out_tag)
 
-        self.m_aperature = aperature
+        self.m_aperture = aperture
 
     def _initialize(self):
         if self.m_image_out_port is not None:
@@ -66,16 +66,13 @@ class VisirFrameSelectionModule(ProcessingModule):
         print "nimages is: ", nimages
         print "frames is: ", frames #frames[:-1]
         print "nframes is:", nframes
-        print "index :", index
+        #print "index :", index
 
         for i, f in enumerate(frames[:-1]):
             progress(i, (len(frames)-1), "Running VisirFrameSelectionModule...")
 
             time.sleep(1)
-            # Do the frameselection here...., call self.frame()
-            # self.frame()
-            print '\n', "i is: ", i
-            print "f is: ", f
+            print '\n', "i is: ", i, '\t', "f is: ", f
 
             frame_start = np.array(frames[i])
             frame_end = np.array(frames[i+1] )
@@ -85,6 +82,11 @@ class VisirFrameSelectionModule(ProcessingModule):
             print "frame_start: ", frame_start
             print "frame_end: ", frame_end
             print images.shape
+
+            for ii in range(images.shape[0]):
+                l_image = images[ii,:,:]
+
+
             self.m_image_out_port.append(images)
 
         sys.stdout.write("Running VisirFrameSelectionModule... [DONE]\n")
@@ -96,6 +98,10 @@ class VisirFrameSelectionModule(ProcessingModule):
         '''
         Run the method of the module
         '''
+
+        pixscale = self.m_image_in_port.get_attribute("PIXSCALE")
+        self.m_aperture = self.m_aperture/pixscale
+
         self._initialize()
         self.frame()
 
