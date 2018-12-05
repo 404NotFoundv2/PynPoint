@@ -43,11 +43,16 @@ Installation from Github.com:
 * Clone the repository in the desired folder
 * Add in the config file of your virtualenv (in /bin/activate):
 
-```
-export PYTHONPATH="/path/to/the/repos"
-```
+.. code-block:: bash
+        export PYTHONPATH="/path/to/the/repos"
 
 Reactivate the virtualenv and it should be up and running
+
+.. code-block:: bash
+
+        export PYTHONPATH="/scratch/jjonker/jasper/lib/python2.7/site-packages/PynPoint/"
+        export alias vim="~/vim/bin/vim"
+
 
 Mailing list
 ------------
