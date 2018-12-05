@@ -65,3 +65,5 @@ from PynPoint.ProcessingModules.VisirNodSubtraction import VisirNodSubtractionMo
 from PynPoint.ProcessingModules.VisirInitialization import VisirInitializationModule
 
 from PynPoint.ProcessingModules.VisirInverter import VisirInverterModule
+
+from PynPoint.ProcessingModules.VisirFrameSelection import VisirFrameSelectionModule
