@@ -66,7 +66,8 @@ Installation from Github.com:
 
         pip install -r /path/to/the/pynpoint_folder/requirements.txt
 
------------
+For me:
+
 .. code-block:: bash
 
         export PYTHONPATH="/scratch/jjonker/jasper/lib/python2.7/site-packages/PynPoint/"
