@@ -41,13 +41,37 @@ Documentation can be found at `http://pynpoint.readthedocs.io <http://pynpoint.r
 Installation from Github.com:
 
 * Clone the repository in the desired folder
-* Add in the config file of your virtualenv (in /bin/activate):
 
 .. code-block:: bash
 
-        export PYTHONPATH="/path/to/the/repos"
+        git clone https://github.com/404NotFoundv2/PynPoint.git
 
-Reactivate the virtualenv and it should be up and running
+* Create a virtualenv: 
+
+.. code-block:: bash
+
+         virtualenv venv
+
+* Add in the config file of your virtualenv (in venv/bin/activate):
+
+.. code-block:: bash
+
+        export PYTHONPATH="/path/to/the/pynpoint_folder"
+
+
+* Activate the virtualenv: 
+
+.. code-block:: bash
+
+        source venv/bin/activate
+
+* Install the required packages: 
+
+.. code-block:: bash
+
+        pip install -r /path/to/the/pynpoint_folder/requirements.txt
+
+For me:
 
 .. code-block:: bash
 
