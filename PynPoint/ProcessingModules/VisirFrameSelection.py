@@ -4,6 +4,8 @@
 import numpy as np
 import sys
 from PynPoint.Core.Processing import ProcessingModule
+from PynPoint.Util.ModuleTools import progress, memory_frames, \
+                                        number_images_port
 
 
 class VisirFrameSelectionModule(ProcessingModule):
@@ -41,6 +43,11 @@ class VisirFrameSelectionModule(ProcessingModule):
     def frame(self):
         '''
         Check the frame for high fluctuations of the background
+        - Idea what to do, check for the whole frame wether this is close to zero
+            (mean?)
+        - Look trough all pixels in the frame and whenever there is a that is
+            higher than 5-sigma, remove the frame (check we do not remove to
+            many tho).
         '''
 
     def run(self):
@@ -50,4 +57,11 @@ class VisirFrameSelectionModule(ProcessingModule):
         self._initialize()
 
         memory = self._m_config_port.get_attribute("MEMORY")
-        nimages = 
+
+        nimages = number_images_port(self.m_image_in_port)
+        frames = memory_frames(memory, nimages)
+
+        for i, f in enumerate(frames):
+            progress(i, len(frames), "Running VisirFrameSelectionModule...")
+
+            # Do the frameselection here...., call self.frame()
