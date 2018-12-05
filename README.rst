@@ -44,6 +44,7 @@ Installation from Github.com:
 * Add in the config file of your virtualenv (in /bin/activate):
 
 .. code-block:: bash
+
         export PYTHONPATH="/path/to/the/repos"
 
 Reactivate the virtualenv and it should be up and running
