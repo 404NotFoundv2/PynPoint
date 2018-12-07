@@ -69,10 +69,77 @@ class VisirFrameSelectionModule(ProcessingModule):
             self.m_image_out_port.del_all_data()
             self.m_image_out_port.del_all_attributes()
 
-    def patch(self):
+    def patch_frame(self, science_frame):
         '''
-        Do the sigma check every patch
+        Masking of single frame
         '''
+
+        starpos = np.zeros((2), dtype=np.int64)
+
+        starpos[:] = locate_star(image=science_frame,
+                                 center=None,
+                                 width=None,
+                                 fwhm=int(math.ceil(float(self.m_fwhm)/(float(self.m_pixscale)))))
+
+        # Mask the pixels around this maximum by the size of aperture
+        radius = int(float(self.m_aperture)/float(self.m_pixscale)/2.)
+
+        # Inside every frame mask the pixels around the starpos
+        for j in range(radius):
+            for jj in range(radius):
+                if int(round(math.sqrt((j**2 + jj**2)))) <= radius:
+                        science_frame[starpos[0] + j,
+                                      starpos[1] + jj] = 0
+                        science_frame[starpos[0] - j,
+                                      starpos[1] - jj] = 0
+                        science_frame[starpos[0] - j,
+                                      starpos[1] + jj] = 0
+                        science_frame[starpos[0] + j,
+                                      starpos[1] - jj] = 0
+
+        return science_frame
+
+    def patch(self, science_image, nimages):
+        '''
+        For the patch of images, science_images, determine the brightest pixel,
+        and create a mask around this.
+        '''
+
+        for ii in range(science_image.shape[0]):
+            science_image[ii, :, :] = \
+                self.patch_frame(science_frame=science_image[ii, :, :])
+
+        '''
+        starpos = np.zeros((nimages, 2), dtype=np.int64)
+
+        # Take single frames
+        for ii in range(science_image.shape[0]):
+            l_image = science_image[ii, :, :]
+
+            starpos[ii, :] = locate_star(image=l_image,
+                                         center=None,
+                                         width=None,
+                                         fwhm=int(math.ceil(float(self.m_fwhm)/(float(self.m_pixscale)))))
+
+            # Mask the pixels around this maximum by the size of aperture
+            radius = int(float(self.m_aperture)/float(self.m_pixscale)/2.)
+
+            # Inside every frame mask the pixels around the starpos
+            for j in range(radius):
+                for jj in range(radius):
+                    if int(round(math.sqrt((j**2 + jj**2)))) <= radius:
+                            l_image[starpos[ii, 0] + j,
+                                    starpos[ii, 1] + jj] = 0
+                            l_image[starpos[ii, 0] - j,
+                                    starpos[ii, 1] - jj] = 0
+                            l_image[starpos[ii, 0] - j,
+                                    starpos[ii, 1] + jj] = 0
+                            l_image[starpos[ii, 0] + j,
+                                    starpos[ii, 1] - jj] = 0
+
+            science_image[ii, :, :] = l_image[:, :]
+            '''
+        return science_image
 
     def frame(self):
         '''
@@ -117,38 +184,10 @@ class VisirFrameSelectionModule(ProcessingModule):
             print "frame_start: ", frame_start
             print "frame_end: ", frame_end
             print images.shape
-            time.sleep(1)
+            # time.sleep(1)
             print '\n', "i is: ", i, '\t', "f is: ", f
 
-            # Find the brightest pixel of the image
-            starpos = np.zeros((nimages, 2), dtype=np.int64)
-
-            # Take single frames
-            for ii in range(images.shape[0]):
-                l_image = images[ii, :, :]
-
-                starpos[ii, :] = locate_star(image=l_image,
-                                             center=None,
-                                             width=None,
-                                             fwhm=int(math.ceil(float(self.m_fwhm)/(float(self.m_pixscale)))))
-
-                # Mask the pixels around this maximum by the size of aperture
-                radius = int(float(self.m_aperture)/float(self.m_pixscale)/2.)
-
-                # Inside every frame mask the pixels around the starpos
-                for j in range(radius):
-                    for jj in range(radius):
-                        if int(round(math.sqrt((j**2 + jj**2)))) <= radius:
-                                l_image[starpos[ii, 0] + j,
-                                        starpos[ii, 1] + jj] = 0
-                                l_image[starpos[ii, 0] - j,
-                                        starpos[ii, 1] - jj] = 0
-                                l_image[starpos[ii, 0] - j,
-                                        starpos[ii, 1] + jj] = 0
-                                l_image[starpos[ii, 0] + j,
-                                        starpos[ii, 1] - jj] = 0
-
-                images[ii, :, :] = l_image[:, :]
+            images = self.patch(science_image=images, nimages=nimages)
             self.m_image_out_port.append(images)
 
         sys.stdout.write("Running VisirFrameSelectionModule... [DONE]\n")
