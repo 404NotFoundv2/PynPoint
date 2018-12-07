@@ -28,7 +28,9 @@ class VisirFrameSelectionModule(ProcessingModule):
         :type image_in_tag: str
         :param image_out_tag: Entry written as output
         :type image_out_tag: str
-
+        :param aperture: Diameter in arcsec used to mask the star, usually
+            taken to be a few times the fwhm of the psf
+        :type aperture: float
         :return: None
         '''
 
@@ -103,23 +105,25 @@ class VisirFrameSelectionModule(ProcessingModule):
         print "nframes is:", nframes
         # print "index :", index
 
+        # Move trough the seperate frames blocks
         for i, f in enumerate(frames[:-1]):
             progress(i, (len(frames)-1), "Running VisirFrameSelectionModule...")
-
-            time.sleep(1)
-            print '\n', "i is: ", i, '\t', "f is: ", f
 
             frame_start = np.array(frames[i])
             frame_end = np.array(frames[i+1])
 
-            # Check outside aperature for flatness
             images = self.m_image_in_port[frame_start:frame_end, ]
+
             print "frame_start: ", frame_start
             print "frame_end: ", frame_end
             print images.shape
+            time.sleep(1)
+            print '\n', "i is: ", i, '\t', "f is: ", f
 
+            # Find the brightest pixel of the image
             starpos = np.zeros((nimages, 2), dtype=np.int64)
 
+            # Take single frames
             for ii in range(images.shape[0]):
                 l_image = images[ii, :, :]
 
@@ -127,7 +131,24 @@ class VisirFrameSelectionModule(ProcessingModule):
                                              center=None,
                                              width=None,
                                              fwhm=int(math.ceil(float(self.m_fwhm)/(float(self.m_pixscale)))))
-            print "Starpos is: ", starpos[1, :]
+
+                # Mask the pixels around this maximum by the size of aperture
+                radius = int(float(self.m_aperture)/float(self.m_pixscale)/2.)
+
+                # Inside every frame mask the pixels around the starpos
+                for j in range(radius):
+                    for jj in range(radius):
+                        if int(round(math.sqrt((j**2 + jj**2)))) <= radius:
+                                l_image[starpos[ii, 0] + j,
+                                        starpos[ii, 1] + jj] = 0
+                                l_image[starpos[ii, 0] - j,
+                                        starpos[ii, 1] - jj] = 0
+                                l_image[starpos[ii, 0] - j,
+                                        starpos[ii, 1] + jj] = 0
+                                l_image[starpos[ii, 0] + j,
+                                        starpos[ii, 1] - jj] = 0
+
+                images[ii, :, :] = l_image[:, :]
             self.m_image_out_port.append(images)
 
         sys.stdout.write("Running VisirFrameSelectionModule... [DONE]\n")
@@ -148,7 +169,7 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
 
-        # self.m_image_out_port.add_attribute()
+        # self.m_image_out_port.add_attribute("", , static=False)
         self.m_image_out_port.add_history_information("FrameSelectionModule",
                                                       "")
         self.m_image_out_port.close_port()
