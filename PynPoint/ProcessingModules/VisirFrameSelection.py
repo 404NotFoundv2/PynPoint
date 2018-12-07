@@ -8,6 +8,7 @@ from PynPoint.Util.ModuleTools import progress, memory_frames, \
                              number_images_port, locate_star
 import time
 import math
+import multiprocessing as mp
 
 
 class VisirFrameSelectionModule(ProcessingModule):
@@ -109,36 +110,6 @@ class VisirFrameSelectionModule(ProcessingModule):
             science_image[ii, :, :] = \
                 self.patch_frame(science_frame=science_image[ii, :, :])
 
-        '''
-        starpos = np.zeros((nimages, 2), dtype=np.int64)
-
-        # Take single frames
-        for ii in range(science_image.shape[0]):
-            l_image = science_image[ii, :, :]
-
-            starpos[ii, :] = locate_star(image=l_image,
-                                         center=None,
-                                         width=None,
-                                         fwhm=int(math.ceil(float(self.m_fwhm)/(float(self.m_pixscale)))))
-
-            # Mask the pixels around this maximum by the size of aperture
-            radius = int(float(self.m_aperture)/float(self.m_pixscale)/2.)
-
-            # Inside every frame mask the pixels around the starpos
-            for j in range(radius):
-                for jj in range(radius):
-                    if int(round(math.sqrt((j**2 + jj**2)))) <= radius:
-                            l_image[starpos[ii, 0] + j,
-                                    starpos[ii, 1] + jj] = 0
-                            l_image[starpos[ii, 0] - j,
-                                    starpos[ii, 1] - jj] = 0
-                            l_image[starpos[ii, 0] - j,
-                                    starpos[ii, 1] + jj] = 0
-                            l_image[starpos[ii, 0] + j,
-                                    starpos[ii, 1] - jj] = 0
-
-            science_image[ii, :, :] = l_image[:, :]
-            '''
         return science_image
 
     def frame(self):
@@ -156,21 +127,24 @@ class VisirFrameSelectionModule(ProcessingModule):
         aperture
         '''
 
-        memory = self._m_config_port.get_attribute("MEMORY")
-        nimages = number_images_port(self.m_image_in_port)
-        nframes = self.m_image_in_port.get_attribute("NFRAMES")
+        '''
         index = self.m_image_in_port.get_attribute("INDEX")
-
-        if self.m_num_ref > nimages or self.m_num_ref == 0:
-            self.m_num_ref = nimages
-
-        frames = memory_frames(self.m_num_ref, nimages)
+        memory = self._m_config_port.get_attribute("MEMORY")
+        nframes = self.m_image_in_port.get_attribute("NFRAMES")
 
         print "Memory is: ", memory
         print "nimages is: ", nimages
         print "frames is: ", frames  # frames[:-1]
         print "nframes is:", nframes
-        # print "index :", index
+        print "index :", index
+        '''
+
+        nimages = number_images_port(self.m_image_in_port)
+
+        if self.m_num_ref > nimages or self.m_num_ref == 0:
+            self.m_num_ref = nimages
+
+        frames = memory_frames(self.m_num_ref, nimages)
 
         # Move trough the seperate frames blocks
         for i, f in enumerate(frames[:-1]):
@@ -181,11 +155,12 @@ class VisirFrameSelectionModule(ProcessingModule):
 
             images = self.m_image_in_port[frame_start:frame_end, ]
 
+            '''
             print "frame_start: ", frame_start
             print "frame_end: ", frame_end
             print images.shape
-            # time.sleep(1)
             print '\n', "i is: ", i, '\t', "f is: ", f
+            '''
 
             images = self.patch(science_image=images, nimages=nimages)
             self.m_image_out_port.append(images)
