@@ -6,7 +6,7 @@ import sys
 from PynPoint.Core.Processing import ProcessingModule
 from PynPoint.Util.ModuleTools import progress, memory_frames, \
                              number_images_port, locate_star
-import time
+# import time
 import math
 import multiprocessing as mp
 
@@ -70,11 +70,13 @@ class VisirFrameSelectionModule(ProcessingModule):
             self.m_image_out_port.del_all_data()
             self.m_image_out_port.del_all_attributes()
 
-    def patch_frame(self, science_frame):
+    def patch_frame(self, no_images):
         '''
         Masking of single frame
         '''
 
+        #science_frame = self.science_image[no_images, :, :]
+        science_frame = self.science_image[no_images, :, :]
         starpos = np.zeros((2), dtype=np.int64)
 
         starpos[:] = locate_star(image=science_frame,
@@ -102,15 +104,28 @@ class VisirFrameSelectionModule(ProcessingModule):
 
     def patch(self, science_image, nimages):
         '''
-        For the patch of images, science_images, determine the brightest pixel,
-        and create a mask around this.
+        For the patch of images, pass a single frame trough te function
+        patch_frame, and collect the output and return it.
         '''
+        from pathos.multiprocessing import ProcessPool
+        from functools import partial
 
+        cpu = self._m_config_port.get_attribute("CPU")
+        no_images = range(science_image.shape[0])
+
+        self.science_image = science_image
+
+        global science_data
+        science_data = np.zeros(science_image.shape)
+        science_data[1, :, :] = self.patch_frame(1)
+
+        '''
         for ii in range(science_image.shape[0]):
             science_image[ii, :, :] = \
                 self.patch_frame(science_frame=science_image[ii, :, :])
+        '''
 
-        return science_image
+        return science_data
 
     def frame(self):
         '''
