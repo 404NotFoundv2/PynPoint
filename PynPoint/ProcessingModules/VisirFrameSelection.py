@@ -9,6 +9,7 @@ from PynPoint.Util.ModuleTools import progress, memory_frames, \
 # import time
 import math
 import multiprocessing as mp
+from scipy import stats
 
 
 class VisirFrameSelectionModule(ProcessingModule):
@@ -70,13 +71,59 @@ class VisirFrameSelectionModule(ProcessingModule):
             self.m_image_out_port.del_all_data()
             self.m_image_out_port.del_all_attributes()
 
-    def patch_frame(self, no_images):
+    def _mean(self, science_in):
+        '''
+        This function calculates the mean of every image and returns it,
+        including the index which image has which mean
+        '''
+
+        science_out = np.zeros(science_in.shape)
+        mean = np.zeros(science_in.shape[0])
+        sig = np.zeros(science_in.shape[0])
+
+        for i in range(science_in.shape[0]):
+            science_frame = science_in[i, :, :]
+
+            mean[i] = np.mean(science_frame)
+            sig[i] = np.std(science_frame)
+
+        return mean, sig
+
+    def remove_frame(self, science_in, mean, sig):
+        '''
+        This function removes the frames that have large sigma (?) of the mean
+        '''
+
+        sigma_mean = np.zeros(mean.shape)
+
+        sigma_mean = np.std(mean)
+
+        index = np.array([])
+        for i in range(mean.shape[0]):
+            if mean[i] >= self.m_sigma*sigma_mean:
+                index = np.append(index, i)
+                #science_out = np.delete(arr=science_in, obj=np.s_[index],
+                #                        axis=(1, 2))
+        print index
+
+        good_index = np.array(range(science_in.shape[0]))
+        for i in range(science_in.shape[0]):
+            for a in range(len(index)):
+                if good_index[i] == index[a]
+
+
+        science_out = np.zeros((mean.shape[0]-len(index), mean.shape[1], mean.shape[2]))
+        science_out = science_in[
+
+        return science_out
+
+    def patch_frame(self, science_in):
         '''
         Masking of single frame
         '''
 
         #science_frame = self.science_image[no_images, :, :]
-        science_frame = self.science_image[no_images, :, :]
+        science_frame = science_in
         starpos = np.zeros((2), dtype=np.int64)
 
         starpos[:] = locate_star(image=science_frame,
@@ -102,30 +149,22 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         return science_frame
 
-    def patch(self, science_image, nimages):
+    def patch(self, science_in):
         '''
         For the patch of images, pass a single frame trough te function
         patch_frame, and collect the output and return it.
         '''
-        from pathos.multiprocessing import ProcessPool
-        from functools import partial
 
         cpu = self._m_config_port.get_attribute("CPU")
-        no_images = range(science_image.shape[0])
+        no_images = range(science_in.shape[0])
 
-        self.science_image = science_image
+        science_out = np.zeros(science_in.shape)
 
-        global science_data
-        science_data = np.zeros(science_image.shape)
-        science_data[1, :, :] = self.patch_frame(1)
+        for ii in range(science_in.shape[0]):
+            science_out[ii, :, :] = \
+                self.patch_frame(science_in=science_in[ii, :, :])
 
-        '''
-        for ii in range(science_image.shape[0]):
-            science_image[ii, :, :] = \
-                self.patch_frame(science_frame=science_image[ii, :, :])
-        '''
-
-        return science_data
+        return science_out
 
     def frame(self):
         '''
@@ -163,7 +202,8 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         # Move trough the seperate frames blocks
         for i, f in enumerate(frames[:-1]):
-            progress(i, (len(frames)-1), "Running VisirFrameSelectionModule...")
+            progress(i, (len(frames)-1),
+                     "Running VisirFrameSelectionModule...")
 
             frame_start = np.array(frames[i])
             frame_end = np.array(frames[i+1])
@@ -177,8 +217,15 @@ class VisirFrameSelectionModule(ProcessingModule):
             print '\n', "i is: ", i, '\t', "f is: ", f
             '''
 
-            images = self.patch(science_image=images, nimages=nimages)
-            self.m_image_out_port.append(images)
+            # Create mask around PSF
+            images = self.patch(science_in=images)
+
+            # Do the statistics here
+
+            mean, sig = self._mean(images)
+            good_science = self.remove_frame(images, mean, sig)
+
+            self.m_image_out_port.append(good_science)
 
         sys.stdout.write("Running VisirFrameSelectionModule... [DONE]\n")
         sys.stdout.flush()
