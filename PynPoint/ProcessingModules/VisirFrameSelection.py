@@ -21,7 +21,7 @@ class VisirFrameSelectionModule(ProcessingModule):
                  aperture="0.3",
                  fwhm="0.3",
                  num_ref=100,
-                 sigma=5.)
+                 sigma=5.):
         '''
         Constructor of the VisirFrameSelectionModule
         :param name_in: Unique name of the instance
@@ -135,7 +135,10 @@ class VisirFrameSelectionModule(ProcessingModule):
                                  fwhm=int(math.ceil(float(self.m_fwhm)/(float(self.m_pixscale)))))
 
         # Mask the pixels around this maximum by the size of aperture
-        radius = int(float(self.m_aperture)/float(self.m_pixscale)/2.)
+        radius = int(round(self.m_aperture/2.))
+        print "aperture: ", self.m_aperture
+        print "pixscale: ", self.m_pixscale
+        print "radius: ", radius
 
         # Inside every frame mask the pixels around the starpos
         for j in range(radius):
