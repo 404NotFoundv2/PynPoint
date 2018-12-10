@@ -17,6 +17,7 @@ class VisirFrameSelectionModule(ProcessingModule):
                  name_in="frame_selection",
                  image_in_tag="image_in",
                  image_out_tag="image_out",
+                 image_removed="image_rem",
                  aperture="0.3",
                  fwhm="0.3",
                  num_ref=100,
@@ -41,6 +42,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         # Port
         self.m_image_in_port = self.add_input_port(image_in_tag)
         self.m_image_out_port = self.add_output_port(image_out_tag)
+        self.m_image_out_port_2 = self.add_output_port(image_removed)
 
         # Parameters
         self.m_aperture = aperture
@@ -71,13 +73,16 @@ class VisirFrameSelectionModule(ProcessingModule):
             self.m_image_out_port.del_all_data()
             self.m_image_out_port.del_all_attributes()
 
+        if self.m_image_out_port_2 is not None:
+            self.m_image_out_port_2.del_all_data()
+            self.m_image_out_port_2.del_all_attributes()
+
     def _mean(self, science_in):
         '''
         This function calculates the mean of every image and returns it,
         including the index which image has which mean
         '''
 
-        science_out = np.zeros(science_in.shape)
         mean = np.zeros(science_in.shape[0])
         sig = np.zeros(science_in.shape[0])
 
@@ -100,25 +105,33 @@ class VisirFrameSelectionModule(ProcessingModule):
         tot_mean = np.mean(mean)
 
         science_out = science_in
-        index = np.array([])
-        a = 0
+        index = np.array([], dtype=int)
 
         for i in range(mean.shape[0]):
             if (tot_mean + mean[i]) >= self.m_sigma*sigma_mean:
                 index = np.append(index, i)
-                print "science_out.shape = ", science_out.shape
-                science_out = np.delete(science_out, index[a], 0)
-                a += 1
 
-        return science_out, index
+        index_rev = index[::-1]
+
+        for i in index_rev:
+                # print "science_out.shape = ", science_out.shape
+                science_out = np.delete(science_out, i, 0)
+
+        im_rem = np.zeros((len(index), science_in.shape[1],
+                           science_in.shape[2]))
+        b = 0
+
+        for i in index:
+            im_rem[b, :, :] = science_in[i, :, :]
+            b += 1
+
+        return science_out, index, im_rem
 
     def patch_frame(self, science_frame):
         '''
         Masking of single frame
         '''
 
-        #science_frame = self.science_image[no_images, :, :]
-        #science_frame = science[:,:]
         starpos = np.zeros((2), dtype=np.int64)
 
         starpos[:] = locate_star(image=science_frame,
@@ -150,9 +163,6 @@ class VisirFrameSelectionModule(ProcessingModule):
         patch_frame, and collect the output and return it.
         '''
 
-        cpu = self._m_config_port.get_attribute("CPU")
-        no_images = range(science_in.shape[0])
-
         science_out = np.zeros(science_in.shape)
         science = science_in.copy()
 
@@ -177,24 +187,14 @@ class VisirFrameSelectionModule(ProcessingModule):
         aperture
         '''
 
-        '''
-        index = self.m_image_in_port.get_attribute("INDEX")
-        memory = self._m_config_port.get_attribute("MEMORY")
-        nframes = self.m_image_in_port.get_attribute("NFRAMES")
-
-        print "Memory is: ", memory
-        print "nimages is: ", nimages
-        print "frames is: ", frames  # frames[:-1]
-        print "nframes is:", nframes
-        print "index :", index
-        '''
-
         nimages = number_images_port(self.m_image_in_port)
 
         if self.m_num_ref > nimages or self.m_num_ref == 0:
             self.m_num_ref = nimages
 
         frames = memory_frames(self.m_num_ref, nimages)
+
+        frames_removed_idx = np.array([], dtype=int)
 
         # Move trough the seperate frames blocks
         for i, f in enumerate(frames[:-1]):
@@ -211,18 +211,20 @@ class VisirFrameSelectionModule(ProcessingModule):
 
             # Do the statistics here
             mean, sig = self._mean(masked)
-            good_science, index = self.remove_frame(science_in=images,
-                                                    mean=mean, sig=sig)
+            good_science, idx, image_rem = self.remove_frame(
+                science_in=images, mean=mean, sig=sig)
 
-            print "index: ", index
-            print "Science shape now: ", good_science.shape
+            idx = idx + f
+            frames_removed_idx = np.append(frames_removed_idx, idx)
 
             self.m_image_out_port.append(good_science)
+            self.m_image_out_port_2.append(image_rem)
 
         sys.stdout.write("Running VisirFrameSelectionModule... [DONE]\n")
         sys.stdout.flush()
+        print "Frames removed: \n", frames_removed_idx
 
-        return None
+        return frames_removed_idx
 
     def run(self):
         '''
@@ -233,11 +235,17 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_aperture = self.m_aperture/self.m_pixscale
 
         self._initialize()
-        self.frame()
+        frames_removed = self.frame()
 
-        self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
+        history = "Number of frames removed ="+str(len(frames_removed))
 
-        # self.m_image_out_port.add_attribute("", , static=False)
+        self.m_image_out_port.copy_attributes_from_input_port(
+            self.m_image_in_port)
+        self.m_image_out_port_2.copy_attributes_from_input_port(
+            self.m_image_in_port)
+
+        self.m_image_out_port.add_attribute("Frames_Removed",
+                                            frames_removed, static=False)
         self.m_image_out_port.add_history_information("FrameSelectionModule",
-                                                      "")
+                                                      history)
         self.m_image_out_port.close_port()
