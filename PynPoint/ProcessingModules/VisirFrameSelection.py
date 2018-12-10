@@ -136,9 +136,6 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         # Mask the pixels around this maximum by the size of aperture
         radius = int(round(self.m_aperture/2.))
-        print "aperture: ", self.m_aperture
-        print "pixscale: ", self.m_pixscale
-        print "radius: ", radius
 
         # Inside every frame mask the pixels around the starpos
         for j in range(radius):
