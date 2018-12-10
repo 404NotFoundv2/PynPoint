@@ -21,8 +21,7 @@ class VisirFrameSelectionModule(ProcessingModule):
                  aperture="0.3",
                  fwhm="0.3",
                  num_ref=100,
-                 sigma=5.,
-                 num_patch=100):
+                 sigma=5.)
         '''
         Constructor of the VisirFrameSelectionModule
         :param name_in: Unique name of the instance
@@ -49,7 +48,6 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_fwhm = fwhm
         self.m_num_ref = num_ref
         self.m_sigma = sigma
-        self.m_num_patch = num_patch
 
     def _initialize(self):
         if self.m_image_out_port is not None:
@@ -64,9 +62,6 @@ class VisirFrameSelectionModule(ProcessingModule):
             raise ValueError("The parameter sigma should be a float")
 
         if not isinstance(self.m_num_ref, int):
-            raise ValueError("The parameter num_ref should be an integer")
-
-        if not isinstance(self.m_num_patch, int):
             raise ValueError("The parameter num_ref should be an integer")
 
         if self.m_image_out_port is not None:
