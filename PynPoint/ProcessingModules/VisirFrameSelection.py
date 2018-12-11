@@ -8,8 +8,6 @@ from PynPoint.Util.ModuleTools import progress, memory_frames, \
                              number_images_port, locate_star
 import math
 import warnings
-# import multiprocessing as mp
-# from scipy import stats
 
 
 class VisirFrameSelectionModule(ProcessingModule):
@@ -180,13 +178,14 @@ class VisirFrameSelectionModule(ProcessingModule):
         '''
 
         starpos = np.zeros((2), dtype=np.int64)
+        fwhm_starps = int(math.ceil(float(self.m_fwhm) /
+                                    (float(self.m_pixscale))))
 
         starpos[:] = locate_star(image=science_frame,
                                  center=None,
                                  width=None,
-                                 fwhm=int(math.ceil(float(self.m_fwhm)/(float(self.m_pixscale)))))
+                                 fwhm=fwhm_starps)
 
-        # Mask the pixels around this maximum by the size of aperture
         radius = int(round(self.m_aperture/2.))
 
         # Inside every frame mask the pixels around the starpos
@@ -302,7 +301,8 @@ class VisirFrameSelectionModule(ProcessingModule):
             self.m_image_in_port)
 
         self.m_image_out_port.add_attribute("Frames_Removed",
-                                            frames_removed, static=False)
+                                            frames_removed,
+                                            static=False)
         self.m_image_out_port.add_history_information("FrameSelectionModule",
                                                       history)
         self.m_image_out_port.close_port()
