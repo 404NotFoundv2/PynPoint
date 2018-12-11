@@ -157,7 +157,6 @@ class VisirFrameSelectionModule(ProcessingModule):
 
             if check >= self.m_sigma*sigma_mean:
                     index = np.append(index, i)
-                    print "mean: ", tot_mean + mean[i], "sigma", self.m_sigma*sigma_mean
 
         index_rev = index[::-1]
 
@@ -222,17 +221,12 @@ class VisirFrameSelectionModule(ProcessingModule):
 
     def frame(self):
         '''
-        Check the frame for high fluctuations of the background
-        - Idea what to do, check for the whole frame wether this is close to
-           zero (mean?)
-        - Look trough all pixels in the frame and whenever there is a that is
-            higher than 5-sigma, remove the frame (check we do not remove to
-            many tho)
+        This function separates the frames into bunches called patches. The
+        mean or median and standard deviation is calculated when a mask of
+        size 'aperture' is covered over the star. Then sigma clipping is
+        applied onto these and it outputs the selected and removed frames.
 
-        Implementation now: Take num_ref frames, divide the frames into patches
-        (discrete disks, numer set by num_patch) and check wether they are
-        outliers. The central PSF is masked with the size of the parameter
-        aperture
+        return the removed frames
         '''
 
         memory = self._m_config_port.get_attribute("MEMORY")
