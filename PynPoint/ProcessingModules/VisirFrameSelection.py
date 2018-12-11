@@ -6,10 +6,10 @@ import sys
 from PynPoint.Core.Processing import ProcessingModule
 from PynPoint.Util.ModuleTools import progress, memory_frames, \
                              number_images_port, locate_star
-# import time
 import math
-import multiprocessing as mp
-from scipy import stats
+import warnings
+# import multiprocessing as mp
+# from scipy import stats
 
 
 class VisirFrameSelectionModule(ProcessingModule):
@@ -18,7 +18,8 @@ class VisirFrameSelectionModule(ProcessingModule):
                  image_in_tag="image_in",
                  image_out_tag="image_out",
                  image_removed="image_rem",
-                 aperture="0.3",
+                 method="median",
+                 aperture="3.",
                  fwhm="0.3",
                  num_ref=100,
                  sigma=5.):
@@ -30,9 +31,24 @@ class VisirFrameSelectionModule(ProcessingModule):
         :type image_in_tag: str
         :param image_out_tag: Entry written as output
         :type image_out_tag: str
+        :param image_removed: Entry of the removed images written as output
+        :type image_removed: str
+        :param method: Set to "median" or "mean" that is used as reference to
+            the sigma clipping
+        :type method: str
         :param aperture: Diameter in arcsec used to mask the star, usually
             taken to be a few times the fwhm of the psf
         :type aperture: float
+        :param fwhm: fwhm of the star
+        :type fwhm: float
+        :param num_ref: Number of references used in calculating the mean of
+            the background. If this is set to None, all images are used (up to
+            where the memory in the configuration file allows)
+        :type num_ref: int
+        :param sigma: The standard deviation setting the limit which images are
+            kept
+        :type sigma: float
+
         :return: None
         '''
 
@@ -44,6 +60,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_image_out_port_2 = self.add_output_port(image_removed)
 
         # Parameters
+        self.m_method = method
         self.m_aperture = aperture
         self.m_fwhm = fwhm
         self.m_num_ref = num_ref
@@ -55,14 +72,26 @@ class VisirFrameSelectionModule(ProcessingModule):
                 raise ValueError("Input and output ports should have a "
                                  "different tag.")
 
+        if self.m_image_out_port_2 is not None:
+            if self.m_image_in_port.tag == self.m_image_out_port_2.tag:
+                raise ValueError("Input and output ports should have a "
+                                 "different tag.")
+
+        if self.m_method != "median" and self.m_method != "mean":
+            raise ValueError("The parameter method should be set to "
+                             "'median' or 'mean'")
+
         if not isinstance(self.m_aperture, float):
             raise ValueError("The parameter aperture should be a float")
 
+        if not isinstance(self.m_fwhm, float):
+            raise ValueError("The parameter fwhm should be a float")
+
+        if not isinstance(self.m_num_ref, int) and self.m_num_ref is not None:
+            raise ValueError("The parameter num_ref should be an integer")
+
         if not isinstance(self.m_sigma, float):
             raise ValueError("The parameter sigma should be a float")
-
-        if not isinstance(self.m_num_ref, int):
-            raise ValueError("The parameter num_ref should be an integer")
 
         if self.m_image_out_port is not None:
             self.m_image_out_port.del_all_data()
@@ -71,6 +100,22 @@ class VisirFrameSelectionModule(ProcessingModule):
         if self.m_image_out_port_2 is not None:
             self.m_image_out_port_2.del_all_data()
             self.m_image_out_port_2.del_all_attributes()
+
+    def _median(self, science_in):
+        '''
+        This function calculates the median of every image and returns it,
+        '''
+
+        med = np.zeros(science_in.shape[0])
+        sig = np.zeros(science_in.shape[0])
+
+        for i in range(science_in.shape[0]):
+            science_frame = science_in[i, :, :]
+
+            med[i] = np.median(science_frame)
+            sig[i] = np.std(science_frame)
+
+        return med, sig
 
     def _mean(self, science_in):
         '''
@@ -97,14 +142,22 @@ class VisirFrameSelectionModule(ProcessingModule):
         sigma_mean = np.zeros(mean.shape)
         sigma_mean = np.std(mean)
 
-        tot_mean = np.mean(mean)
+        if self.m_method == "mean":
+            tot_mean = np.mean(mean)
+        elif self.m_method == "median":
+            tot_mean = np.median(mean)
+        else:
+            raise ValueError("Method input is not properly defined")
 
         science_out = science_in
-        index = np.array([], dtype=int)
+        index = np.array([], dtype=np.int64)
 
         for i in range(mean.shape[0]):
-            if (tot_mean + mean[i]) >= self.m_sigma*sigma_mean:
-                index = np.append(index, i)
+            check = abs(tot_mean + mean[i])
+
+            if check >= self.m_sigma*sigma_mean:
+                    index = np.append(index, i)
+                    print "mean: ", tot_mean + mean[i], "sigma", self.m_sigma*sigma_mean
 
         index_rev = index[::-1]
 
@@ -154,7 +207,7 @@ class VisirFrameSelectionModule(ProcessingModule):
 
     def patch(self, science_in):
         '''
-        For the patch of images, pass a single frame trough te function
+        For the patch of images, pass a single frame trough the function
         patch_frame, and collect the output and return it.
         '''
 
@@ -182,10 +235,19 @@ class VisirFrameSelectionModule(ProcessingModule):
         aperture
         '''
 
+        memory = self._m_config_port.get_attribute("MEMORY")
         nimages = number_images_port(self.m_image_in_port)
 
-        if self.m_num_ref > nimages or self.m_num_ref == 0:
-            self.m_num_ref = nimages
+        if self.m_num_ref > memory:
+            self.m_num_ref = memory
+            warnings.warn("The number of references set is larger than "
+                          "the memory allowed. Change this in the "
+                          "configuration file. Memory={}, "
+                          " num_ref={}".format(memory, self.m_num_ref))
+
+        if self.m_num_ref > nimages or self.m_num_ref == 0 or \
+           self.m_num_ref is None:
+                self.m_num_ref = nimages
 
         frames = memory_frames(self.m_num_ref, nimages)
 
@@ -205,7 +267,13 @@ class VisirFrameSelectionModule(ProcessingModule):
             masked = self.patch(science_in=images)
 
             # Do the statistics here
-            mean, sig = self._mean(masked)
+            if self.m_method == "mean":
+                mean, sig = self._mean(masked)
+            elif self.m_method == "median":
+                mean, sig = self._median(masked)
+            else:
+                raise ValueError("Method input is not properly defined")
+
             good_science, idx, image_rem = self.remove_frame(
                 science_in=images, mean=mean, sig=sig)
 
