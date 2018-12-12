@@ -16,6 +16,7 @@ class VisirFrameSelectionModule(ProcessingModule):
                  image_in_tag="image_in",
                  image_out_tag="image_out",
                  image_removed="image_rem",
+                 std_out="std_out_text",
                  method="median",
                  aperture="3.",
                  fwhm="0.3",
@@ -31,6 +32,10 @@ class VisirFrameSelectionModule(ProcessingModule):
         :type image_out_tag: str
         :param image_removed: Entry of the removed images written as output
         :type image_removed: str
+        :param std_out: Tag that writes the mean/median (depending on the
+        method) and the standard deviation of every frame. In the third colomn
+        it writes the standard deviation over all the frames.
+        :type std_out: str
         :param method: Set to "median" or "mean" that is used as reference to
             the sigma clipping
         :type method: str
@@ -56,6 +61,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_image_in_port = self.add_input_port(image_in_tag)
         self.m_image_out_port = self.add_output_port(image_out_tag)
         self.m_image_out_port_2 = self.add_output_port(image_removed)
+        self.m_image_out_port_3 = self.add_output_port(std_out)
 
         # Parameters
         self.m_method = method
@@ -72,6 +78,11 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         if self.m_image_out_port_2 is not None:
             if self.m_image_in_port.tag == self.m_image_out_port_2.tag:
+                raise ValueError("Input and output ports should have a "
+                                 "different tag.")
+
+        if self.m_image_out_port_3 is not None:
+            if self.m_image_in_port.tag == self.m_image_out_port_3.tag:
                 raise ValueError("Input and output ports should have a "
                                  "different tag.")
 
@@ -99,6 +110,10 @@ class VisirFrameSelectionModule(ProcessingModule):
             self.m_image_out_port_2.del_all_data()
             self.m_image_out_port_2.del_all_attributes()
 
+        if self.m_image_out_port_3 is not None:
+            self.m_image_out_port_3.del_all_data()
+            self.m_image_out_port_3.del_all_attributes()
+
     def _median(self, science_in):
         '''
         This function calculates the median of every image and returns it,
@@ -112,6 +127,7 @@ class VisirFrameSelectionModule(ProcessingModule):
 
             med[i] = np.median(science_frame)
             sig[i] = np.std(science_frame)
+        print med[3]
 
         return med, sig
 
@@ -121,8 +137,8 @@ class VisirFrameSelectionModule(ProcessingModule):
         including the index which image has which mean
         '''
 
-        mean = np.zeros(science_in.shape[0])
-        sig = np.zeros(science_in.shape[0])
+        mean = np.zeros(science_in.shape[0], dtype=np.float64)
+        sig = np.zeros(science_in.shape[0], dtype=np.float64)
 
         for i in range(science_in.shape[0]):
             science_frame = science_in[i, :, :]
@@ -134,10 +150,11 @@ class VisirFrameSelectionModule(ProcessingModule):
 
     def remove_frame(self, science_in, mean, sig):
         '''
-        This function removes the frames that have large sigma (?) of the mean
+        This function removes the frames that have large sigma of the
+        mean/median
         '''
 
-        sigma_mean = np.zeros(mean.shape)
+        sigma_mean = np.zeros(mean.shape, dtype=np.float64)
         sigma_mean = np.std(mean)
 
         if self.m_method == "mean":
@@ -170,7 +187,7 @@ class VisirFrameSelectionModule(ProcessingModule):
             im_rem[b, :, :] = science_in[i, :, :]
             b += 1
 
-        return science_out, index, im_rem
+        return science_out, index, im_rem, sigma_mean
 
     def patch_frame(self, science_frame):
         '''
@@ -267,14 +284,19 @@ class VisirFrameSelectionModule(ProcessingModule):
             else:
                 raise ValueError("Method input is not properly defined")
 
-            good_science, idx, image_rem = self.remove_frame(
-                science_in=images, mean=mean, sig=sig)
+            good_science, idx, image_rem, sig_tot = \
+                self.remove_frame(science_in=images,
+                                  mean=mean,
+                                  sig=sig)
 
             idx = idx + f
             frames_removed_idx = np.append(frames_removed_idx, idx)
 
+            result = np.column_stack((mean, sig))
+
             self.m_image_out_port.append(good_science)
             self.m_image_out_port_2.append(image_rem)
+            self.m_image_out_port_3.append(result)
 
         sys.stdout.write("Running VisirFrameSelectionModule... [DONE]\n")
         sys.stdout.flush()
