@@ -2,10 +2,14 @@
 Modules for stacking and subsampling of images.
 """
 
+from __future__ import absolute_import
+
 import sys
 import warnings
 
 import numpy as np
+
+from six.moves import range
 
 from PynPoint.Core.Processing import ProcessingModule
 from PynPoint.Util.ModuleTools import progress, memory_frames
@@ -221,11 +225,18 @@ class MeanCubeModule(ProcessingModule):
         sys.stdout.write("Running MeanCubeModule... [DONE]\n")
         sys.stdout.flush()
 
+        nimages = np.size(nframes)
+
         self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
-        if "NFRAMES" in non_static:
-            self.m_image_out_port.del_attribute("NFRAMES")
+
         if "INDEX" in non_static:
-            self.m_image_out_port.del_attribute("INDEX")
+            index = np.arange(0, nimages, 1, dtype=np.int)
+            self.m_image_out_port.add_attribute("INDEX", index, static=False)
+
+        if "NFRAMES" in non_static:
+            nframes = np.ones(nimages, dtype=np.int)
+            self.m_image_out_port.add_attribute("NFRAMES", nframes, static=False)
+
         self.m_image_out_port.close_port()
 
 
@@ -448,8 +459,7 @@ class CombineTagsModule(ProcessingModule):
                 if key != "INDEX" or (key == "INDEX" and not self.m_index_init):
 
                     if self.m_check_attr:
-                        if key == "PARANG" or key == "STAR_POSITION" or key == "INDEX" or \
-                           key == "NFRAMES":
+                        if key in ('PARANG', 'STAR_POSITION', 'INDEX', 'NFRAMES'):
                             if status == 1:
                                 self.m_image_out_port.add_attribute(key, values, static=False)
 

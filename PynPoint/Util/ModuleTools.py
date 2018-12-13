@@ -2,6 +2,8 @@
 Functions for Pypeline modules.
 """
 
+from __future__ import absolute_import
+
 import sys
 import math
 
@@ -91,8 +93,8 @@ def locate_star(image,
     :rtype: (int, int)
     """
 
-    if center is not None and width is not None:
-        if center[0] is None and center[1] is None:
+    if width is not None:
+        if center is None:
             center = image_center(image)
 
         image = crop_image(image, center, width)
@@ -105,8 +107,8 @@ def locate_star(image,
     argmax = np.asarray(np.unravel_index(smooth.argmax(), smooth.shape))
 
     if center is not None and width is not None:
-        argmax[0] += center[0] - (image.shape[0]-1)/2 # y
-        argmax[1] += center[1] - (image.shape[1]-1)/2 # x
+        argmax[0] += center[0] - (image.shape[0]-1) // 2 # y
+        argmax[1] += center[1] - (image.shape[1]-1) // 2 # x
 
     return argmax
 

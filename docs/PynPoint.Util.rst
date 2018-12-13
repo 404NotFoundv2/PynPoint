@@ -68,6 +68,22 @@ PynPoint.Util.PSFSubtractionTools module
     :undoc-members:
     :show-inheritance:
 
+PynPoint.Util.RemoveTools module
+--------------------------------
+
+.. automodule:: PynPoint.Util.RemoveTools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+PynPoint.Util.Residuals module
+------------------------------
+
+.. automodule:: PynPoint.Util.Residuals
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 PynPoint.Util.TestTools module
 ------------------------------
 

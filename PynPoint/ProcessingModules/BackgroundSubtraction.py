@@ -2,13 +2,19 @@
 Modules with background subtraction routines.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import sys
 import math
+import warnings
 
 import numpy as np
 
 from scipy.sparse.linalg import svds
 from scipy.optimize import curve_fit
+from six.moves import map
+from six.moves import range
 
 from PynPoint.Core.Processing import ProcessingModule
 from PynPoint.ProcessingModules.ImageResizing import CropImagesModule
@@ -664,7 +670,7 @@ class PCABackgroundSubtractionModule(ProcessingModule):
 
             basis_reshaped = basis.reshape(basis.shape[0], -1)
 
-            for i in xrange(im_arr.shape[0]):
+            for i in range(im_arr.shape[0]):
                 basis_reshaped_masked = (basis*mask[i]).reshape(basis.shape[0], -1)
 
                 data_to_fit = im_arr[i, ]
@@ -713,7 +719,7 @@ class PCABackgroundSubtractionModule(ProcessingModule):
         star = np.zeros((nimages, 2))
         for i, _ in enumerate(star):
             star[i, :] = locate_star(image=self.m_star_in_port[i, ]-bg_mean,
-                                     center=(None, None),
+                                     center=None,
                                      width=self.m_subframe,
                                      fwhm=self.m_gaussian)
 
@@ -822,7 +828,8 @@ class DitheringBackgroundModule(ProcessingModule):
         :type name_in: str
         :param image_in_tag: Tag of the database entry that is read as input.
         :type image_in_tag: str
-        :param image_out_tag: Tag of the database entry that is written as output.
+        :param image_out_tag: Tag of the database entry that is written as output. Not written if
+                              set to None.
         :type image_out_tag: str
         :param center: Tuple with the centers of the dithering positions, e.g. ((x0,y0), (x1,y1)).
                        The order of the coordinates should correspond to the order in which the
@@ -963,22 +970,22 @@ class DitheringBackgroundModule(ProcessingModule):
 
         def _admin_start(count, n_dither, position, star_pos):
             if self.m_crop or self.m_prepare or self.m_pca_background:
-                print "Processing dither position "+str(count+1)+" out of "+str(n_dither)+"..."
-                print "Center position =", position
+                print("Processing dither position "+str(count+1)+" out of "+str(n_dither)+"...")
+                print("Center position =", position)
 
                 if self.m_cubes is None and self.m_center is not None:
-                    print "DITHER_X, DITHER_Y =", tuple(star_pos)
+                    print("DITHER_X, DITHER_Y =", tuple(star_pos))
 
         def _admin_end(count, n_dither):
             if self.m_combine == "mean":
-                tags.append("dither_mean"+str(count+1))
+                tags.append(self.m_image_in_tag+"_dither_mean"+str(count+1))
 
             elif self.m_combine == "pca":
-                tags.append("dither_pca_res"+str(count+1))
+                tags.append(self.m_image_in_tag+"_dither_pca_res"+str(count+1))
 
             if self.m_crop or self.m_prepare or self.m_pca_background:
-                print "Processing dither position "+str(count+1)+ \
-                      " out of "+str(n_dither)+"... [DONE]"
+                print("Processing dither position "+str(count+1)+ \
+                      " out of "+str(n_dither)+"... [DONE]")
 
         n_dither, star_pos = self._initialize()
         tags = []
@@ -987,69 +994,83 @@ class DitheringBackgroundModule(ProcessingModule):
             _admin_start(i, n_dither, position, star_pos[i])
 
             if self.m_crop:
-                crop = CropImagesModule(size=self.m_size,
-                                        center=(int(math.ceil(position[0])),
-                                                int(math.ceil(position[1]))),
-                                        name_in="crop"+str(i),
-                                        image_in_tag=self.m_image_in_tag,
-                                        image_out_tag="dither_crop"+str(i+1))
+                module = CropImagesModule(size=self.m_size,
+                                          center=(int(math.ceil(position[0])),
+                                                  int(math.ceil(position[1]))),
+                                          name_in="crop"+str(i),
+                                          image_in_tag=self.m_image_in_tag,
+                                          image_out_tag=self.m_image_in_tag+ \
+                                                        "_dither_crop"+str(i+1))
 
-                crop.connect_database(self._m_data_base)
-                crop.run()
+                module.connect_database(self._m_data_base)
+                module.run()
 
             if self.m_prepare:
-                prepare = PCABackgroundPreparationModule(dither=(n_dither,
-                                                                 self.m_cubes,
-                                                                 star_pos[i]),
-                                                         name_in="prepare"+str(i),
-                                                         image_in_tag="dither_crop"+str(i+1),
-                                                         star_out_tag="dither_star"+str(i+1),
-                                                         mean_out_tag="dither_mean"+str(i+1),
-                                                         background_out_tag="dither_background" \
-                                                                            +str(i+1))
+                module = PCABackgroundPreparationModule(dither=(n_dither,
+                                                                self.m_cubes,
+                                                                star_pos[i]),
+                                                        name_in="prepare"+str(i),
+                                                        image_in_tag=self.m_image_in_tag+ \
+                                                                     "_dither_crop"+str(i+1),
+                                                        star_out_tag=self.m_image_in_tag+ \
+                                                                     "_dither_star"+str(i+1),
+                                                        mean_out_tag=self.m_image_in_tag+ \
+                                                                     "_dither_mean"+str(i+1),
+                                                        background_out_tag=self.m_image_in_tag+ \
+                                                                           "_dither_background"+ \
+                                                                           str(i+1))
 
-                prepare.connect_database(self._m_data_base)
-                prepare.run()
+                module.connect_database(self._m_data_base)
+                module.run()
 
             if self.m_pca_background:
-                pca = PCABackgroundSubtractionModule(pca_number=self.m_pca_number,
-                                                     mask_star=self.m_mask_star,
-                                                     mask_planet=self.m_mask_planet,
-                                                     subtract_mean=self.m_subtract_mean,
-                                                     subframe=self.m_subframe,
-                                                     name_in="pca_background"+str(i),
-                                                     star_in_tag="dither_star"+str(i+1),
-                                                     background_in_tag="dither_background"+str(i+1),
-                                                     residuals_out_tag="dither_pca_res"+str(i+1),
-                                                     fit_out_tag="dither_pca_fit"+str(i+1),
-                                                     mask_out_tag="dither_pca_mask"+str(i+1))
+                module = PCABackgroundSubtractionModule(pca_number=self.m_pca_number,
+                                                        mask_star=self.m_mask_star,
+                                                        mask_planet=self.m_mask_planet,
+                                                        subtract_mean=self.m_subtract_mean,
+                                                        subframe=self.m_subframe,
+                                                        name_in="pca_background"+str(i),
+                                                        star_in_tag=self.m_image_in_tag+ \
+                                                                    "_dither_star"+str(i+1),
+                                                        background_in_tag=self.m_image_in_tag+ \
+                                                                          "_dither_background"+ \
+                                                                          str(i+1),
+                                                        residuals_out_tag=self.m_image_in_tag+ \
+                                                                          "_dither_pca_res"+ \
+                                                                          str(i+1),
+                                                        fit_out_tag=self.m_image_in_tag+ \
+                                                                    "_dither_pca_fit"+str(i+1),
+                                                        mask_out_tag=self.m_image_in_tag+ \
+                                                                     "_dither_pca_mask"+str(i+1))
 
-                pca.connect_database(self._m_data_base)
-                pca.run()
+                module.connect_database(self._m_data_base)
+                module.run()
 
             _admin_end(i, n_dither)
 
-        if self.m_combine is not None:
-            combine = CombineTagsModule(name_in="combine",
-                                        check_attr=True,
-                                        index_init=False,
-                                        image_in_tags=tags,
-                                        image_out_tag="dither_combine")
+        if self.m_combine is not None and self.m_image_out_tag is not None:
+            module = CombineTagsModule(name_in="combine",
+                                       check_attr=True,
+                                       index_init=False,
+                                       image_in_tags=tags,
+                                       image_out_tag=self.m_image_in_tag+"_dither_combine")
 
-            combine.connect_database(self._m_data_base)
-            combine.run()
+            module.connect_database(self._m_data_base)
+            module.run()
 
-            sort = SortParangModule(name_in="sort",
-                                    image_in_tag="dither_combine",
-                                    image_out_tag=self.m_image_out_tag)
+            module = SortParangModule(name_in="sort",
+                                      image_in_tag=self.m_image_in_tag+"_dither_combine",
+                                      image_out_tag=self.m_image_out_tag)
 
-            sort.connect_database(self._m_data_base)
-            sort.run()
+            module.connect_database(self._m_data_base)
+            module.run()
 
 
 class NoddingBackgroundModule(ProcessingModule):
     """
-    Module for background subtraction of data obtained with nodding (e.g., NACO AGPM data).
+    Module for background subtraction of data obtained with nodding (e.g., NACO AGPM data). Before
+    using this module, the sky images should be stacked with the MeanCubeModule such that each image
+    in the stack of sky images corresponds to the mean combination of a single FITS data cube.
     """
 
     def __init__(self,
@@ -1066,7 +1087,8 @@ class NoddingBackgroundModule(ProcessingModule):
         :param science_in_tag: Tag of the database entry with science images that are read as
                                input.
         :type science_in_tag: str
-        :param sky_in_tag: Tag of the database entry with sky images that are read as input.
+        :param sky_in_tag: Tag of the database entry with sky images that are read as input. The
+                           MeanCubeModule should be used on the sky images beforehand.
         :type sky_in_tag: str
         :param image_out_tag: Tag of the database entry with sky subtracted images that are written
                               as output.
@@ -1117,7 +1139,14 @@ class NoddingBackgroundModule(ProcessingModule):
 
         exp_no_sky = self.m_sky_in_port.get_attribute("EXP_NO")
         exp_no_science = self.m_science_in_port.get_attribute("EXP_NO")
+
+        nframes_sky = self.m_sky_in_port.get_attribute("NFRAMES")
         nframes_science = self.m_science_in_port.get_attribute("NFRAMES")
+
+        if np.all(nframes_sky != 1):
+            warnings.warn("The NFRAMES values of the sky images are not all equal to unity. "
+                          "The MeanCubeModule should be applied on the sky images before the "
+                          "NoddingBackgroundModule is used.")
 
         for i, item in enumerate(exp_no_sky):
             self.m_time_stamps.append(TimeStamp(item, "SKY", i))
@@ -1150,7 +1179,7 @@ class NoddingBackgroundModule(ProcessingModule):
             return search_for_previous_sky()
 
         def search_for_previous_sky():
-            for i in reversed(range(0, index_of_science_data)):
+            for i in reversed(list(range(0, index_of_science_data))):
                 if self.m_time_stamps[i].m_im_type == "SKY":
                     return self.m_sky_in_port[self.m_time_stamps[i].m_index, ]
 

@@ -2,6 +2,10 @@
 Functions for image processing.
 """
 
+from __future__ import absolute_import
+
+import math
+
 import numpy as np
 
 from scipy.ndimage import fourier_shift
@@ -16,23 +20,23 @@ def image_center(image):
     can not be unambiguously defined for an even-sized image.
 
     :param image: Input image (2D or 3D).
-    :type image: ndarray
+    :type image: numpy.ndarray
 
     :return: Pixel position (y, x) of the image center.
     :rtype: (int, int)
     """
 
     if image.shape[-2]%2 == 0 and image.shape[-1]%2 == 0:
-        center = (image.shape[-2]/2-1, image.shape[-1]/2-1)
+        center = (image.shape[-2] // 2 - 1, image.shape[-1] // 2 - 1)
 
     elif image.shape[-2]%2 == 0 and image.shape[-1]%2 == 1:
-        center = (image.shape[-2]/2-1, (image.shape[-1]-1)/2)
+        center = (image.shape[-2] // 2 - 1, (image.shape[-1]-1) // 2)
 
     elif image.shape[-2]%2 == 1 and image.shape[-1]%2 == 0:
-        center = ((image.shape[-2]-1)/2, image.shape[-1]/2-1)
+        center = ((image.shape[-2]-1) // 2, image.shape[-1] // 2 - 1)
 
     elif image.shape[-2]%2 == 1 and image.shape[-1]%2 == 1:
-        center = ((image.shape[-2]-1)/2, (image.shape[-1]-1)/2)
+        center = ((image.shape[-2]-1) // 2, (image.shape[-1]-1) // 2)
 
     return center
 
@@ -43,7 +47,7 @@ def crop_image(image,
     Function to crop square images around a specified position.
 
     :param image: Input image (2D or 3D).
-    :type image: ndarray
+    :type image: numpy.ndarray
     :param center: Tuple (y, x) with the new image center. The center of the image is used if
                    set to None.
     :type center: (int, int)
@@ -52,7 +56,7 @@ def crop_image(image,
     :type size: int
 
     :return: Cropped odd-sized image.
-    :rtype: ndarray
+    :rtype: numpy.ndarray
     """
 
     if center is None or (center[0] is None and center[1] is None):
@@ -65,11 +69,11 @@ def crop_image(image,
     if size%2 == 0:
         size += 1
 
-    x_start = center[1] - (size-1)/2
-    x_end = center[1] + (size-1)/2 + 1
+    x_start = center[1] - (size-1) // 2
+    x_end = center[1] + (size-1) // 2 + 1
 
-    y_start = center[0] - (size-1)/2
-    y_end = center[0] + (size-1)/2 + 1
+    y_start = center[0] - (size-1) // 2
+    y_end = center[0] + (size-1) // 2 + 1
 
     if x_start < 0 or y_start < 0 or x_end > image.shape[1] or y_end > image.shape[0]:
         raise ValueError("Target image resolution does not fit inside the input image resolution.")
@@ -77,7 +81,7 @@ def crop_image(image,
     if image.ndim == 2:
         im_crop = np.copy(image[y_start:y_end, x_start:x_end])
 
-    elif image.ndim == 2:
+    elif image.ndim == 3:
         im_crop = np.copy(image[:, y_start:y_end, x_start:x_end])
 
     return im_crop
@@ -88,12 +92,12 @@ def rotate_images(images,
     Function to rotate all images in clockwise direction.
 
     :param images: Stack of images.
-    :type images: ndarray
+    :type images: numpy.ndarray
     :param angle: Rotation angles (deg).
-    :type angle: ndarray
+    :type angle: numpy.ndarray
 
     :return: Rotated images.
-    :rtype: ndarray
+    :rtype: numpy.ndarray
     """
 
     im_rot = np.zeros(images.shape)
@@ -118,7 +122,7 @@ def create_mask(im_shape,
     :type size: (float, float)
 
     :return: Image mask.
-    :rtype: ndarray
+    :rtype: numpy.ndarray
     """
 
     mask = np.ones(im_shape)
@@ -153,14 +157,14 @@ def shift_image(image,
     Function to shift an image.
 
     :param images: Input image.
-    :type images: ndarray
+    :type images: numpy.ndarray
     :param shift_yx: Shift (y, x) to be applied (pixel).
     :type shift_yx: (float, float)
     :param interpolation: Interpolation type (spline, bilinear, fft)
     :type interpolation: str
 
     :return: Shifted image.
-    :rtype: ndarray
+    :rtype: numpy.ndarray
     """
 
     if interpolation == "spline":
@@ -182,14 +186,14 @@ def scale_image(image,
     Function to spatially scale an image.
 
     :param images: Input image.
-    :type images: ndarray
+    :type images: numpy.ndarray
     :param scaling_x: Scaling factor x.
     :type scaling_x: float
     :param scaling_y: Scaling factor y.
     :type scaling_y: float
 
     :return: Shifted image.
-    :rtype: ndarray
+    :rtype: numpy.ndarray
     """
 
     sum_before = np.sum(image)
@@ -204,3 +208,26 @@ def scale_image(image,
     sum_after = np.sum(im_scale)
 
     return im_scale * (sum_before / sum_after)
+
+def polar_to_cartesian(image, sep, ang):
+    """
+    Function to convert polar coordinates to pixel coordinates.
+
+    :param image: Input image (2D or 3D).
+    :type image: numpy.ndarray
+    :param sep: Separation (pix).
+    :type sep: float
+    :param ang: Position angle (deg), measured counterclockwise with respect to the positive
+                y-axis.
+    :type ang: float
+
+    :return: Pixel position (y, x) of the image center.
+    :rtype: (int, int)
+    """
+
+    center = image_center(image) # (y, x)
+
+    x_pos = center[1] + sep*math.cos(math.radians(ang+90.))
+    y_pos = center[0] + sep*math.sin(math.radians(ang+90.))
+
+    return x_pos, y_pos

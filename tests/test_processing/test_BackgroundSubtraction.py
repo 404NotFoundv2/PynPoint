@@ -9,6 +9,7 @@ from PynPoint.ProcessingModules.BackgroundSubtraction import MeanBackgroundSubtr
                                                              SimpleBackgroundSubtractionModule, \
                                                              NoddingBackgroundModule, \
                                                              DitheringBackgroundModule
+from PynPoint.ProcessingModules.StackingAndSubsampling import MeanCubeModule
 from PynPoint.Util.TestTools import create_config, create_fake, remove_test_data
 
 warnings.simplefilter("always")
@@ -172,37 +173,37 @@ class TestBackgroundSubtraction(object):
         self.pipeline.add_module(pca_dither)
         self.pipeline.run_module("pca_dither1")
 
-        data = self.pipeline.get_data("dither_crop1")
+        data = self.pipeline.get_data("dither_dither_crop1")
         assert np.allclose(data[0, 14, 14], 0.05304008435511765, rtol=1e-6, atol=0.)
         assert np.allclose(np.mean(data), 0.0002606205855710527, rtol=1e-6, atol=0.)
         assert data.shape == (80, 31, 31)
 
-        data = self.pipeline.get_data("dither_star1")
+        data = self.pipeline.get_data("dither_dither_star1")
         assert np.allclose(data[0, 14, 14], 0.05304008435511765, rtol=1e-6, atol=0.)
         assert np.allclose(np.mean(data), 0.0010414302265833978, rtol=1e-6, atol=0.)
         assert data.shape == (20, 31, 31)
 
-        data = self.pipeline.get_data("dither_mean1")
+        data = self.pipeline.get_data("dither_dither_mean1")
         assert np.allclose(data[0, 14, 14], 0.0530465391626132, rtol=1e-6, atol=0.)
         assert np.allclose(np.mean(data), 0.0010426228104479674, rtol=1e-6, atol=0.)
         assert data.shape == (20, 31, 31)
 
-        data = self.pipeline.get_data("dither_background1")
+        data = self.pipeline.get_data("dither_dither_background1")
         assert np.allclose(data[0, 14, 14], -0.00010629310882411674, rtol=1e-6, atol=0.)
         assert np.allclose(np.mean(data), 3.5070523360436835e-07, rtol=1e-6, atol=0.)
         assert data.shape == (60, 31, 31)
 
-        data = self.pipeline.get_data("dither_pca_fit1")
+        data = self.pipeline.get_data("dither_dither_pca_fit1")
         assert np.allclose(data[0, 14, 14], 1.5196412298279846e-05, rtol=1e-5, atol=0.)
         assert np.allclose(np.mean(data), 1.9779802529804516e-07, rtol=1e-4, atol=0.)
         assert data.shape == (20, 31, 31)
 
-        data = self.pipeline.get_data("dither_pca_res1")
+        data = self.pipeline.get_data("dither_dither_pca_res1")
         assert np.allclose(data[0, 14, 14], 0.05302488794281937, rtol=1e-6, atol=0.)
         assert np.allclose(np.mean(data), 0.0010412324285580998, rtol=1e-6, atol=0.)
         assert data.shape == (20, 31, 31)
 
-        data = self.pipeline.get_data("dither_pca_mask1")
+        data = self.pipeline.get_data("dither_dither_pca_mask1")
         assert np.allclose(data[0, 14, 14], 0., rtol=1e-6, atol=0.)
         assert np.allclose(np.mean(data), 0.9531737773152965, rtol=1e-6, atol=0.)
         assert data.shape == (20, 31, 31)
@@ -212,7 +213,7 @@ class TestBackgroundSubtraction(object):
         assert np.allclose(np.mean(data), 0.001040627977720779, rtol=1e-6, atol=0.)
         assert data.shape == (80, 31, 31)
 
-        data = self.pipeline.get_attribute("dither_pca_res1", "STAR_POSITION", static=False)
+        data = self.pipeline.get_attribute("dither_dither_pca_res1", "STAR_POSITION", static=False)
         assert np.allclose(data[0, 0], [15., 15.], rtol=1e-6, atol=0.)
         assert np.allclose(np.mean(data), 15., rtol=1e-6, atol=0.)
         assert data.shape == (20, 2)
@@ -249,8 +250,28 @@ class TestBackgroundSubtraction(object):
 
     def test_nodding_background(self):
 
+        mean = MeanCubeModule(name_in="mean",
+                              image_in_tag="sky",
+                              image_out_tag="mean")
+
+        self.pipeline.add_module(mean)
+        self.pipeline.run_module("mean")
+
+        data = self.pipeline.get_data("mean")
+        assert np.allclose(data[0, 50, 50], 1.270877476321969e-05, rtol=limit, atol=0.)
+        assert np.allclose(np.mean(data), 8.937360237872607e-07, rtol=limit, atol=0.)
+        assert data.shape == (4, 100, 100)
+
+        attribute = self.pipeline.get_attribute("mean", "INDEX", static=False)
+        assert np.allclose(np.mean(attribute), 1.5, rtol=limit, atol=0.)
+        assert attribute.shape == (4, )
+
+        attribute = self.pipeline.get_attribute("mean", "NFRAMES", static=False)
+        assert np.allclose(np.mean(attribute), 1, rtol=limit, atol=0.)
+        assert attribute.shape == (4, )
+
         nodding = NoddingBackgroundModule(name_in="nodding",
-                                          sky_in_tag="sky",
+                                          sky_in_tag="mean",
                                           science_in_tag="star",
                                           image_out_tag="nodding",
                                           mode="both")
@@ -259,6 +280,6 @@ class TestBackgroundSubtraction(object):
         self.pipeline.run_module("nodding")
 
         data = self.pipeline.get_data("nodding")
-        assert np.allclose(data[0, 50, 50], 0.09806026673451182, rtol=limit, atol=0.)
-        assert np.allclose(np.mean(data), 9.942251790089106e-05, rtol=limit, atol=0.)
+        assert np.allclose(data[0, 50, 50], 0.09797142624717381, rtol=limit, atol=0.)
+        assert np.allclose(np.mean(data), 9.945087327935862e-05, rtol=limit, atol=0.)
         assert data.shape == (40, 100, 100)

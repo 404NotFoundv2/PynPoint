@@ -6,7 +6,7 @@ PynPoint
 .. image:: https://badge.fury.io/py/pynpoint.svg
     :target: https://badge.fury.io/py/pynpoint
 
-.. image:: https://img.shields.io/badge/Python-2.7-yellow.svg?style=flat
+.. image:: https://img.shields.io/badge/Python-2.7%2C%203.6%2C%203.7-yellow.svg?style=flat
     :target: https://pypi.python.org/pypi/pynpoint
 
 .. image:: https://travis-ci.org/PynPoint/PynPoint.svg?branch=master
@@ -24,8 +24,8 @@ PynPoint
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg
     :target: https://github.com/PynPoint/PynPoint/blob/master/LICENSE
 
-.. image:: http://img.shields.io/badge/arXiv-1207.6637-orange.svg?style=flat
-    :target: http://arxiv.org/abs/1207.6637
+.. image:: http://img.shields.io/badge/arXiv-1811.03336-orange.svg?style=flat
+    :target: http://arxiv.org/abs/1811.03336
 
 PynPoint is an end-to-end pipeline for the data reduction of high-contrast imaging data of planetary and substellar companions, as well as circumstellar disks in scattered light.
 
@@ -87,7 +87,7 @@ Please subscribe to the `mailing list <https://pynpoint.readthedocs.io/en/latest
 Attribution
 -----------
 
-If you use PynPoint in your publication then please cite Stolker et al. subm. Please also cite `Amara & Quanz (2012) <http://adsabs.harvard.edu/abs/2012MNRAS.427..948A>`_ as the origin of PynPoint, which focused initially on the use of principal component analysis (PCA) as a PSF subtraction method. In case you use specifically the PCA-based background subtraction module or the wavelet based speckle suppression module, please give credit to `Hunziker et al. (2018) <http://adsabs.harvard.edu/abs/2018A%26A...611A..23H>`_ or `Bonse, Quanz & Amara (2018) <http://adsabs.harvard.edu/abs/2018arXiv180405063B>`_, respectively.
+If you use PynPoint in your publication then please cite `Stolker et al. (2018) <http://adsabs.harvard.edu/abs/2018arXiv181103336S>`_. Please also cite `Amara & Quanz (2012) <http://adsabs.harvard.edu/abs/2012MNRAS.427..948A>`_ as the origin of PynPoint, which focused initially on the use of principal component analysis (PCA) as a PSF subtraction method. In case you use specifically the PCA-based background subtraction module or the wavelet based speckle suppression module, please give credit to `Hunziker et al. (2018) <http://adsabs.harvard.edu/abs/2018A%26A...611A..23H>`_ or `Bonse, Quanz & Amara (2018) <http://adsabs.harvard.edu/abs/2018arXiv180405063B>`_, respectively.
 
 License
 -------
@@ -99,4 +99,4 @@ PynPoint is free software and distributed under the GNU General Public License v
 Acknowledgements
 ----------------
 
-The PynPoint logo was designed by `Atlas Infographics <https://atlas-infographics.nl>`_.
+The PynPoint logo was designed by `Atlas Infographics <https://atlas-infographics.nl>`_ and is available `here <https://www.ethz.ch/content/specialinterest/phys/particle-physics/star-and-planet-formation/en/research/research-and-thesis-projects/pynpoint.html>`_.
