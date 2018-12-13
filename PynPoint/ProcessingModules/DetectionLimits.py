@@ -229,9 +229,6 @@ class ContrastCurveModule(ProcessingModule):
         sys.stdout.flush()
 
         for i, sep in enumerate(pos_r):
-<<<<<<< HEAD
-            fpf_threshold = 2.7e-7 #sigma5, or sigma4=32.e-5 #student_fpf(self.m_sigma, sep, self.m_aperture, self.m_ignore)
-=======
 
             if self.m_threshold[0] == "sigma":
                 fpf_threshold = student_fpf(sigma=self.m_threshold[1],
@@ -245,7 +242,6 @@ class ContrastCurveModule(ProcessingModule):
             else:
                 raise ValueError("Threshold type not recognized.")
 
->>>>>>> upstream/master
             fake_fpf[i] = fpf_threshold
 
             for j, ang in enumerate(pos_t):
