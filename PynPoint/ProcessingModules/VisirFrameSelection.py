@@ -1,6 +1,6 @@
 # This is a tool that checks the surroundings of the star on high background
 # flux and will remove these corresponding frames
-
+from __future__ import division
 import numpy as np
 import sys
 from PynPoint.Core.Processing import ProcessingModule
@@ -8,7 +8,6 @@ from PynPoint.Util.ModuleTools import progress, memory_frames, \
                              number_images_port, locate_star
 import math
 import warnings
-
 
 class VisirFrameSelectionModule(ProcessingModule):
     def __init__(self,
