@@ -182,7 +182,7 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         for i in index_rev:
                 # print "science_out.shape = ", science_out.shape
-                print "Frame % : ", '{:.2f}'.format((index_rev[len(index_rev)-i])/index_rev[0]) ,  "    limit- ", '{:.2f}'.format(tot_mean-self.m_sigma*sigma_mean), "    mean: ", '{:.2f}'.format(mean[i]), "    limit+ ", '{:.2f}'.format(tot_mean+self.m_sigma*sigma_mean)
+                print "Frame % : ", '{:.0f}'.format((index_rev[0]-i)/index_rev[0]*100.) ,  "    limit- ", '{:.2f}'.format(tot_mean-self.m_sigma*sigma_mean), "    mean: ", '{:.2f}'.format(mean[i]), "    limit+ ", '{:.2f}'.format(tot_mean+self.m_sigma*sigma_mean)
                 science_out = np.delete(science_out, i, 0)
 
         im_rem = np.zeros((len(index), science_in.shape[1],
@@ -332,11 +332,11 @@ class VisirFrameSelectionModule(ProcessingModule):
         frames_removed = self.frame()
         
         print "frames removed: ", frames_removed
-        print "parang: ", parang
         print "length parang: ", len(parang)
         frames_removed_new = frames_removed[::-1]
         for i, f in enumerate(frames_removed_new):
             parang = np.delete(parang, f)
+        print "length parang now: ", len(parang)
 
         history = "Number of frames removed ="+str(len(frames_removed))
 
