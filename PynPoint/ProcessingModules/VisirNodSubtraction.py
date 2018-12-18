@@ -159,6 +159,16 @@ class VisirNodSubtractionModule(ProcessingModule):
 
         self.m_image_out_port1.copy_attributes_from_input_port(
             self.m_image_in_port1)
+            
+        im_shape = self.m_image_in_port.get_shape()
+        index_new = int(im_shape[0]/2)    
+        nframes = self.m_image_in_port.get_attribute("NFRAMES")
+        nframes_new = nframes[:len(nframes)]
+            
+        self.m_image_out_port.add_attribute("NFRAMES", nframes_new, static=False)    
+        self.m_image_out_port.add_attribute("INDEX", index_new, static=False)            
+            
+            
         self.m_image_out_port1.add_history_information(
             "VisirNodSubtractionModule", "Subtracted Nod")
         self.m_image_out_port1.add_attribute("PARANG", self.m_posang,

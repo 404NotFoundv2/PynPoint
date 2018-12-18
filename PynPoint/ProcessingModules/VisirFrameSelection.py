@@ -32,8 +32,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         :param image_removed: Entry of the removed images written as output
         :type image_removed: str
         :param std_out: Tag that writes the mean/median (depending on the
-        method) and the standard deviation of every frame. In the third colomn
-        it writes the standard deviation over all the frames.
+        method) and in the second column the standard deviation for every frame.
         :type std_out: str
         :param method: Set to "median" or "mean" that is used as reference to
             the sigma clipping
@@ -166,16 +165,24 @@ class VisirFrameSelectionModule(ProcessingModule):
         science_out = science_in
         index = np.array([], dtype=np.int64)
 
+        '''
         for i in range(mean.shape[0]):
             check = abs(tot_mean + mean[i])
 
             if check >= self.m_sigma*sigma_mean:
+                    index = np.append(index, i)
+        '''
+
+        for i in range(mean.shape[0]):
+            if mean[i] <= (tot_mean - self.m_sigma*sigma_mean) or \
+                mean[i] >= (tot_mean + self.m_sigma*sigma_mean):
                     index = np.append(index, i)
 
         index_rev = index[::-1]
 
         for i in index_rev:
                 # print "science_out.shape = ", science_out.shape
+                print "limit- ", round(tot_mean-self.m_sigma*sigma_mean, 3), "    mean: ", round(mean[i], 2), "    limit+ ", round(tot_mean+self.m_sigma*sigma_mean, 2)
                 science_out = np.delete(science_out, i, 0)
 
         im_rem = np.zeros((len(index), science_in.shape[1],
@@ -307,9 +314,17 @@ class VisirFrameSelectionModule(ProcessingModule):
         '''
         Run the method of the module
         '''
+        nframes = self.m_image_in_port.get_attribute("NFRAMES")
+        print nframes
+        indexx = self.m_image_in_port.get_attribute("INDEX")
+        print indexx
 
         self.m_pixscale = self.m_image_in_port.get_attribute("PIXSCALE")
         self.m_aperture = self.m_aperture/self.m_pixscale
+
+        im_shape = self.m_image_in_port.get_shape()
+        nimages = im_shape[0]
+        print nimages
 
         self._initialize()
         frames_removed = self.frame()
@@ -320,6 +335,8 @@ class VisirFrameSelectionModule(ProcessingModule):
             self.m_image_in_port)
         self.m_image_out_port_2.copy_attributes_from_input_port(
             self.m_image_in_port)
+        self.m_image_out_port.add_attribute("INDEX",
+                     np.arange(0, (nimages-len(frames_removed)), 1), static=False)
 
         self.m_image_out_port.add_attribute("Frames_Removed",
                                             frames_removed,
@@ -327,3 +344,5 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_image_out_port.add_history_information("FrameSelectionModule",
                                                       history)
         self.m_image_out_port.close_port()
+        self.m_image_out_port_2.close_port()
+        self.m_image_out_port_3.close_port()
