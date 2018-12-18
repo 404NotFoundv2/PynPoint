@@ -337,6 +337,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         for i, f in enumerate(frames_removed_new):
             parang = np.delete(parang, f)
         print "length parang now: ", len(parang)
+        print "length frames: ", (nimages-len(frames_removed))
 
         history = "Number of frames removed ="+str(len(frames_removed))
 
