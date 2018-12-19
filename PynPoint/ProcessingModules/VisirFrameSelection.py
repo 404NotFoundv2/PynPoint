@@ -326,18 +326,18 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         im_shape = self.m_image_in_port.get_shape()
         nimages = im_shape[0]
-        print nimages
+        #print nimages
 
         self._initialize()
         frames_removed = self.frame()
         
         print "frames removed: ", frames_removed
-        print "length parang: ", len(parang)
+        #print "length parang: ", len(parang)
         frames_removed_new = frames_removed[::-1]
         for i, f in enumerate(frames_removed_new):
             parang = np.delete(parang, f)
-        print "length parang now: ", len(parang)
-        print "length frames: ", (nimages-len(frames_removed))
+        #print "length parang now: ", len(parang)
+        #print "length frames: ", (nimages-len(frames_removed))
 
         history = "Number of frames removed ="+str(len(frames_removed))
 
