@@ -1,6 +1,6 @@
 # This is a tool that checks the surroundings of the star on high background
 # flux and will remove these corresponding frames
-
+from __future__ import division
 import numpy as np
 import sys
 from pynpoint.core.processing import ProcessingModule
@@ -125,7 +125,7 @@ class VisirFrameSelectionModule(ProcessingModule):
 
             med[i] = np.median(science_frame)
             sig[i] = np.std(science_frame)
-        print(med[3])
+        print med[3]
 
         return med, sig
 
@@ -254,16 +254,16 @@ class VisirFrameSelectionModule(ProcessingModule):
         memory = self._m_config_port.get_attribute("MEMORY")
         nimages = number_images_port(self.m_image_in_port)
 
-        if self.m_num_ref is None or self.m_num_ref > nimages or \
-            self.m_num_ref == 0:
-                self.m_num_ref = nimages
-        
         if self.m_num_ref > memory:
             self.m_num_ref = memory
             warnings.warn("The number of references set is larger than "
                           "the memory allowed. Change this in the "
                           "configuration file. Memory={}, "
                           " num_ref={}".format(memory, self.m_num_ref))
+
+        if self.m_num_ref > nimages or self.m_num_ref == 0 or \
+           self.m_num_ref is None:
+                self.m_num_ref = nimages
 
         frames = memory_frames(self.m_num_ref, nimages)
 
@@ -299,10 +299,6 @@ class VisirFrameSelectionModule(ProcessingModule):
             frames_removed_idx = np.append(frames_removed_idx, idx)
 
             result = np.column_stack((mean, sig))
-            
-            if i == 0:
-                print("Mean/Median = ", np.mean(mean))
-                print("Sigma = ", sig_tot)
 
             self.m_image_out_port.append(good_science)
             self.m_image_out_port_2.append(image_rem)
@@ -310,7 +306,7 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         sys.stdout.write("Running VisirFrameSelectionModule... [DONE]\n")
         sys.stdout.flush()
-        print("Frames removed: \n", frames_removed_idx)
+        print "Frames removed: \n", frames_removed_idx
 
         return frames_removed_idx
 
@@ -352,7 +348,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_image_out_port.add_attribute("INDEX",
                      np.arange(0, (nimages-len(frames_removed)), 1), static=False)
         self.m_image_out_port.add_attribute("PARANG", parang, static=False)
-        print("Number frames removed: ", len(frames_removed))
+        print "Number frames removed: ", len(frames_removed)
         non_static = self.m_image_in_port.get_all_non_static_attributes()
         if "NFRAMES" in non_static:
             self.m_image_out_port.del_attribute("NFRAMES")

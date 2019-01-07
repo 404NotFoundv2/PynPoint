@@ -96,7 +96,7 @@ class VisirInitializationModule():
                                  'Uncompressing files...')
                 sys.stdout.flush()
 
-                pool.map(self.uncompress_multi, list(range(len(self.image_folder))))
+                pool.map(self.uncompress_multi, range(len(self.image_folder)))
 
                 sys.stdout.write('\rRunning VISIRInitializationModule... ' +
                                  'Uncompressing files... [DONE]\n')
@@ -214,13 +214,13 @@ class VisirInitializationModule():
         if mode == 'v':
             hdulista = fits.open(image_outa)
             hdulistb = fits.open(image_outb)
-            print()
-            print('###########################################################')
-            print((repr(hdulista.info())))
-            print()
-            print('###########################################################')
-            print((repr(hdulistb.info())))
-            print('\n')
+            print
+            print '###########################################################'
+            print(repr(hdulista.info()))
+            print
+            print '###########################################################'
+            print(repr(hdulistb.info()))
+            print '\n'
             hdulista.close()
             hdulistb.close()
             # print "Shape of original FITS is: hdulist.info()

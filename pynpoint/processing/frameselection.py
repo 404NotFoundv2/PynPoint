@@ -355,6 +355,9 @@ class FrameSelectionModule(ProcessingModule):
             phot_ref = np.nanmax(phot)
 
         phot_std = np.nanstd(phot)
+        
+        print("Mean/median = ", phot_ref)
+        print("std = ", phot_std)
 
         index_rm = np.logical_or((phot > phot_ref+self.m_threshold*phot_std),
                                  (phot < phot_ref-self.m_threshold*phot_std))
@@ -386,6 +389,7 @@ class FrameSelectionModule(ProcessingModule):
             warnings.warn("No frames were removed.")
 
         history = "frames removed = "+str(np.size(indices))
+        print("Number of frames removed = ", np.size(indices))
 
         if self.m_index_out_port is not None:
             self.m_index_out_port.set_all(np.transpose(indices))
