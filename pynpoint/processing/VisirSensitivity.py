@@ -5,14 +5,15 @@ import numpy as np
 from pynpoint.core.processing import ProcessingModule
 from pynpoint.util.module import progress, memory_frames, \
                              number_images_port
+from pynpoint import FalsePositiveModule
 
 
-class VisirBurstModule(ProcessingModule):
+class VisirSensitivityModule(ProcessingModule):
     def __init__(self,
                  name_in="burst",
                  image_in_tag="im_in",
                  image_out_tag="im_out",
-                 method="median"):
+                 model_flux=100.):
         '''
         Constructor of the VisirBurtModule
         :param name_in: Unique name of the instance
@@ -21,20 +22,20 @@ class VisirBurstModule(ProcessingModule):
         :type image_in_tag: str
         :param image_out_tag: Entry written as output
         :type image_out_tag: str
-        :param method: Method used for combining the frames, median of mean
-        :type method: str
+        :param model_flux: Flux given in Jansky of the star
+        :type method: float
 
         return None
         '''
 
-        super(VisirBurstModule, self).__init__(name_in)
+        super(VisirSensitivityModule, self).__init__(name_in)
 
         # Port
         self.m_image_in_port = self.add_input_port(image_in_tag)
         self.image_out_port = self.add_output_port(image_out_tag)
 
         # Parameters
-        self.m_method = method
+        self.m_model_flux = model_flux
 
     def _initialize(self):
         if self.m_image_out_port is not None:
@@ -42,9 +43,8 @@ class VisirBurstModule(ProcessingModule):
                 raise ValueError("Input and output ports should have a "
                                  "different tag.")
 
-        if self.m_method != "median" and self.m_method != "mean":
-            raise ValueError("The parameter method should be set to "
-                             "'median' or 'mean'")
+        if not isinstance(self.m_model_flux, float):
+            raise ValueError("The parameter model_flux should be a float")
 
         if self.m_image_out_port is not None:
             self.m_image_out_port.del_all_data()
@@ -52,24 +52,33 @@ class VisirBurstModule(ProcessingModule):
 
         return None
 
-    def _mean(self, images):
-        nditchop = self.m_image_in_port.get_attribute("NDITSKIP")
+    def sensitivity(self, images):
+        """"
+        Compute the sensitivity of the image for every frame
+        """
+        im_shape = self.m_image_in_port.get_shape()
 
-        return images_comb
+        sys.stdout = os.devnull
+        sys.stderr = os.devnull
 
-    def _median(self, images):
-        nditchop = self.m_image_in_port.get_attribute("NDITSKIP")
+        FalsePositiveModule(position,
+                            aperture,
+                            ignore,
+                            name_in="snr",
+                            image_in_tag="images",
+                            snr_out_tag)
+        pipeline.run_module("snr")
 
-        return images_comb
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+
+        return sensitivity
 
     def run(self):
         self._initialize()
 
         memory = self._m_config_port.get_attribute("MEMORY")
-
-        im_shape = self.m_image_in_port.get_shape()
         nimages = number_images_port(self.m_image_in_port)
-
         frames = memory_frames(memory, nimages)
 
         # Move trough the seperate frames blocks
@@ -82,16 +91,12 @@ class VisirBurstModule(ProcessingModule):
 
             images = self.m_image_in_port[frame_start:frame_end, ]
 
-            if self.m_method == "mean":
-                images_combined = self._mean(images)
-
-            elif self.m_method == "median":
-                images_combined = self._median(images)
+            sensitivity = self.sensitivity()
 
             self.m_image_out_port.append(images_combined)
 
         self.m_image_out_port.copy_attributes_from_input_port(
             self.m_image_in_port)
         self.m_image_out_port.add_history_information(
-            "VisirBurstModule", self.m_method)
+            "VisirSensitivityModule", "Sensitivity")
         self.m_image_out_port.close_port()
