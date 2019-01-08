@@ -53,6 +53,7 @@ class VisirBurstModule(ProcessingModule):
         return None
 
     def _mean(self, images):
+        nditchop = self.m_image_in_port.get_attribute("NDITSKIP")
 
         return images_comb
 
@@ -67,7 +68,6 @@ class VisirBurstModule(ProcessingModule):
 
         im_shape = self.m_image_in_port.get_shape()
         nimages = number_images_port(self.m_image_in_port)
-        nditchop = self.m_image_in_port.get_attribute("NDITSKIP")
 
         frames = memory_frames(memory, nimages)
 
