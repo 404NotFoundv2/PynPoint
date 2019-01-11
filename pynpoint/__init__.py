@@ -82,6 +82,7 @@ from pynpoint.processing.VisirFrameSelection import VisirFrameSelectionModule
 #from pynpoint.processing.VisirInitialization import VisirInitializationModule
 from pynpoint.processing.VisirInverter import VisirInverterModule
 from pynpoint.processing.VisirNodSubtraction import VisirNodSubtractionModule
+from pynpoint.processing.VisirBurst import VisirBurstModule
 
 warnings.simplefilter('always', DeprecationWarning)
 

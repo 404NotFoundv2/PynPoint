@@ -2,6 +2,9 @@
 # @Jasper Jonker
 
 import numpy as np
+from astropy.io import fits
+import glob
+import math
 from pynpoint.core.processing import ProcessingModule
 from pynpoint.util.module import progress, memory_frames, \
                              number_images_port
@@ -10,8 +13,9 @@ from pynpoint.util.module import progress, memory_frames, \
 class VisirBurstModule(ProcessingModule):
     def __init__(self,
                  name_in="burst",
-                 image_in_tag="im_in",
-                 image_out_tag="im_out",
+                 image_in_dir="im_in",
+                 image_out_tag_1="chopa",
+                 image_out_tag_2="chopb",
                  method="median"):
         '''
         Constructor of the VisirBurtModule
@@ -21,7 +25,8 @@ class VisirBurstModule(ProcessingModule):
         :type image_in_tag: str
         :param image_out_tag: Entry written as output
         :type image_out_tag: str
-        :param method: Method used for combining the frames, median of mean
+        :param method: Method used for combining the frames, median, mean or None to use no
+        averaging.
         :type method: str
 
         return None
@@ -30,46 +35,90 @@ class VisirBurstModule(ProcessingModule):
         super(VisirBurstModule, self).__init__(name_in)
 
         # Port
-        self.m_image_in_port = self.add_input_port(image_in_tag)
-        self.image_out_port = self.add_output_port(image_out_tag)
+        self.m_image_out_port_1 = self.add_output_port(image_out_tag_1)
+        self.m_image_out_port_2 = self.add_output_port(image_out_tag_2)
 
         # Parameters
         self.m_method = method
+        self.m_im_dir = image_in_dir
 
     def _initialize(self):
-        if self.m_image_out_port is not None:
-            if self.m_image_in_port.tag == self.m_image_out_port.tag:
-                raise ValueError("Input and output ports should have a "
-                                 "different tag.")
+        if self.m_image_out_port_1 is not None or self.m_image_out_port_2 is not None:
+            if self.m_image_out_port_1.tag == self.m_image_out_port_2.tag:
+                raise ValueError("Output ports should have different tags")
 
-        if self.m_method != "median" and self.m_method != "mean":
+        if self.m_method != "median" and self.m_method != "mean" and self.m_method != None:
             raise ValueError("The parameter method should be set to "
-                             "'median' or 'mean'")
+                             "'median', 'mean' or None")
 
-        if self.m_image_out_port is not None:
-            self.m_image_out_port.del_all_data()
-            self.m_image_out_port.del_all_attributes()
+        if self.m_image_out_port_1 is not None:
+            self.m_image_out_port_1.del_all_data()
+            self.m_image_out_port_1.del_all_attributes()
+
+        if self.m_image_out_port_2 is not None:
+            self.m_image_out_port_2.del_all_data()
+            self.m_image_out_port_2.del_all_attributes()
 
         return None
 
+    def chop_splitting(self, ndit, images, chopa, chopb, i):
+        a = i % (2*ndit)
+        b = math.floor(i / (2*ndit))
+        c = int(b*ndit)
+
+        if a < ndit:
+            chopa[c+a, :, :] = images[i, :, :]
+        elif a >= ndit and a < 2*ndit:
+            chopb[c+a, :, :] = images[i, :, :]
+
+        return chopa, chopb
+
+    def open_fit(self, image_file):
+        hdulist = fits.open(image_file)
+
+        head = hdulist[0].header
+        head_small = hdulist[1].header
+
+        nimages = int(head_small['NAXIS3'])
+        ndit = int(head['ESO DET NDIT'])
+        images = hdulist[1].data
+
+        # Put them in different fit/chop files
+        chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
+        chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
+        for i in range(nimages):
+            chopa, chopb = self.chop_splitting(ndit, images, chopa, chopb, i)
+        chopa = chopa[chopa[:,0,0] != 0, :, :]
+        chopb = chopb[chopb[:,0,0] != 0, :, :]
+        print(chopa.shape)
+        print(chopb.shape)
+
+        hdulist.close()
+
+        return None
+
+    def _none(self, images):
+
+        return images_comb
+
     def _mean(self, images):
-        nditchop = self.m_image_in_port.get_attribute("NDITSKIP")
 
         return images_comb
 
     def _median(self, images):
-        nditchop = self.m_image_in_port.get_attribute("NDITSKIP")
 
         return images_comb
 
     def run(self):
+        # Check if inpu tags are correct
         self._initialize()
 
-        memory = self._m_config_port.get_attribute("MEMORY")
+        # Open each fit file
+        image_in = glob.glob(self.m_im_dir + '*.fits')
+        for im in image_in:
+            self.open_fit(im)
 
-        im_shape = self.m_image_in_port.get_shape()
-        nimages = number_images_port(self.m_image_in_port)
-
+        '''
         frames = memory_frames(memory, nimages)
 
         # Move trough the seperate frames blocks
@@ -88,10 +137,11 @@ class VisirBurstModule(ProcessingModule):
             elif self.m_method == "median":
                 images_combined = self._median(images)
 
-            self.m_image_out_port.append(images_combined)
+            if self.m_method == None:
+                images_combined = self._none(images)
 
-        self.m_image_out_port.copy_attributes_from_input_port(
-            self.m_image_in_port)
-        self.m_image_out_port.add_history_information(
-            "VisirBurstModule", self.m_method)
-        self.m_image_out_port.close_port()
+            self.m_image_out_port.append(images_combined)
+        '''
+        #self.m_image_out_port.add_history_information(
+        #    "VisirBurstModule", self.m_method)
+        #self.m_image_out_port.close_port()
