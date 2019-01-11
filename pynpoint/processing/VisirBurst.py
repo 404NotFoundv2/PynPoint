@@ -8,6 +8,8 @@ import math
 from pynpoint.core.processing import ProcessingModule
 from pynpoint.util.module import progress, memory_frames, \
                              number_images_port
+import multiprocessing as mp
+import functools
 
 
 class VisirBurstModule(ProcessingModule):
@@ -86,10 +88,28 @@ class VisirBurstModule(ProcessingModule):
         # Put them in different fit/chop files
         chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
         chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
+
+        func = functools.partial(self.chop_splitting, ndit, images, chopa, chopb)
+
+        with mp.Pool(processes=4) as pool:
+            result = pool.map(func, range(nimages))
+        '''
+        pool = mp.Pool(processes=4)
+
+        func = functools.partial(self.chop_splitting, ndit, images, chopa, chopb)
+        result = pool.map(func, range(nimages))
+
+        pool.close()
+        pool.join()
+
+        result = np.asarray(result)
+        '''
+        '''
         for i in range(nimages):
             chopa, chopb = self.chop_splitting(ndit, images, chopa, chopb, i)
-        chopa = chopa[chopa[:,0,0] != 0, :, :]
-        chopb = chopb[chopb[:,0,0] != 0, :, :]
+        '''
+        chopa = chopa[chopa[:, 0, 0] != 0, :, :]
+        chopb = chopb[chopb[:, 0, 0] != 0, :, :]
         print(chopa.shape)
         print(chopb.shape)
 
