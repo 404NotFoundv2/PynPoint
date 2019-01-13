@@ -1,15 +1,27 @@
 # This tool combines the burst data made every Chop
 # @Jasper Jonker
-
+#
 import numpy as np
+import sharedmem
 from astropy.io import fits
 import glob
 import math
+import timeit
+import os
 from pynpoint.core.processing import ProcessingModule
-from pynpoint.util.module import progress, memory_frames, \
-                             number_images_port
+from pynpoint.util.module import progress, memory_frames, number_images_port
 import multiprocessing as mp
+from multiprocessing import Pool
 import functools
+#from pathos.multiprocessing import ProcessingPool
+#os.system('taskset -p 0x48 %d' % os.getpid())
+#print("Restricted to ... cpu: ", os.sched_getaffinity(0))
+#print("Number of cpu: ", mp.cpu_count())
+#import psutil
+#all_cpus = list(range(psutil.cpu_count()))
+#p = psutil.Process()
+#p.cpu_affinity(all_cpus)
+#os.system("taskset -p 0xff %d" % os.getpid())
 
 
 class VisirBurstModule(ProcessingModule):
@@ -73,7 +85,7 @@ class VisirBurstModule(ProcessingModule):
         elif a >= ndit and a < 2*ndit:
             chopb[c+a, :, :] = images[i, :, :]
 
-        return chopa, chopb
+        return None
 
     def open_fit(self, image_file):
         hdulist = fits.open(image_file)
@@ -88,32 +100,51 @@ class VisirBurstModule(ProcessingModule):
         # Put them in different fit/chop files
         chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
         chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
+        shareda = sharedmem.empty(chopa.shape)
+        sharedb = sharedmem.empty(chopb.shape)
 
-        func = functools.partial(self.chop_splitting, ndit, images, chopa, chopb)
 
-        with mp.Pool(processes=4) as pool:
-            result = pool.map(func, range(nimages))
-        '''
-        pool = mp.Pool(processes=4)
+        start_time = timeit.default_timer()
 
-        func = functools.partial(self.chop_splitting, ndit, images, chopa, chopb)
-        result = pool.map(func, range(nimages))
+        #if __name__ == "__main__":
+        #pool = mp.Pool(2)
+        #func = functools.partial(self.chop_splitting, ndit, nimages)
+        #pool.map(self.chop_splitting, range(nimages))
 
-        pool.close()
-        pool.join()
+        #pool.close()
+        #pool.join()
 
-        result = np.asarray(result)
-        '''
-        '''
+        #result = np.asarray(result)
+
+        #'''
+        processes = []
         for i in range(nimages):
-            chopa, chopb = self.chop_splitting(ndit, images, chopa, chopb, i)
+            process = mp.Process(target=self.chop_splitting, args=(ndit, images, shareda, sharedb, i))
+            processes.append(process)
+            process.start()
+
+        for process in processes:
+            process.join()
+        #'''
+
+        #print(shareda[:,0,0])
+
+        #for i in range(nimages):
+        #    chopa, chopb = self.chop_splitting(ndit, images, chopa, chopb, i)
+
+        '''
+        chopa, chopb = shareda, sharedb
+        '''
+        elapsed = timeit.default_timer() - start_time
+        print("Time it took to evaluate: \t", np.round(elapsed,2), "seconds")
+
         '''
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
         print(chopa.shape)
         print(chopb.shape)
-
-        hdulist.close()
+        '''
+        #hdulist.close()
 
         return None
 
@@ -162,6 +193,10 @@ class VisirBurstModule(ProcessingModule):
 
             self.m_image_out_port.append(images_combined)
         '''
+        images_combined = np.array([])
+        self.m_image_out_port_1.append(images_combined)
+        self.m_image_out_port_2.append(images_combined)
         #self.m_image_out_port.add_history_information(
         #    "VisirBurstModule", self.m_method)
-        #self.m_image_out_port.close_port()
+        self.m_image_out_port_1.close_port()
+        self.m_image_out_port_2.close_port()
