@@ -5,15 +5,21 @@ import numpy as np
 import sharedmem
 from astropy.io import fits
 import glob
+import os
 import math
 import timeit
-import os
 import sys
-from pynpoint.core.processing import ProcessingModule
+import six
+from pynpoint.core.processing import ProcessingModule, ReadingModule
 from pynpoint.util.module import progress
-import multiprocessing as mp
-from multiprocessing import Pool
-import functools
+from pynpoint.core.attributes import get_attributes
+from pynpoint.readwrite.fitsreading import FitsReadingModule
+#_static_attributes, _non_static_attributes, _extra_attributes
+
+#import os
+#import multiprocessing as mp
+#from multiprocessing import Pool
+#import functools
 #from pathos.multiprocessing import ProcessingPool
 #os.system('taskset -p 0x48 %d' % os.getpid())
 #print("Restricted to ... cpu: ", os.sched_getaffinity(0))
@@ -25,13 +31,15 @@ import functools
 #os.system("taskset -p 0xff %d" % os.getpid())
 
 
-class VisirBurstModule(ProcessingModule):
+class VisirBurstModule(ReadingModule, ProcessingModule):
     def __init__(self,
                  name_in="burst",
                  image_in_dir="im_in",
                  image_out_tag_1="chopa",
                  image_out_tag_2="chopb",
-                 method="median"):
+                 method="median",
+                 check=True,
+                 overwrite=True):
         '''
         Constructor of the VisirBurtModule
         :param name_in: Unique name of the instance
@@ -56,8 +64,31 @@ class VisirBurstModule(ProcessingModule):
         # Parameters
         self.m_method = method
         self.m_im_dir = image_in_dir
+        self.m_check = check
+        self.m_overwrite = overwrite
+
+        # Arguments
+        self.m_static = []
+        self.m_non_static = []
+
+        self.m_attributes = get_attributes()
+
+        for key, value in six.iteritems(self.m_attributes):
+            if value["config"] == "header" and value["attribute"] == "static":
+                self.m_static.append(key)
+
+        for key, value in six.iteritems(self.m_attributes):
+            if value["attribute"] == "non-static":
+                self.m_non_static.append(key)
+
+        self.m_count = 0
 
     def _initialize(self):
+        """
+        Function that clears the __init__ tags if they are not
+        empty given incorrect input
+        """
+
         if self.m_image_out_port_1 is not None or self.m_image_out_port_2 is not None:
             if self.m_image_out_port_1.tag == self.m_image_out_port_2.tag:
                 raise ValueError("Output ports should have different tags")
@@ -73,6 +104,121 @@ class VisirBurstModule(ProcessingModule):
         if self.m_image_out_port_2 is not None:
             self.m_image_out_port_2.del_all_data()
             self.m_image_out_port_2.del_all_attributes()
+
+        return None
+
+    def _static_attributes(self, fits_file, header):
+        """
+        Internal function which adds the static attributes to the central database.
+
+        :param fits_file: Name of the FITS file.
+        :type fits_file: str
+        :param header: Header information from the FITS file that is read.
+        :type header: astropy FITS header
+
+        :return: None
+        """
+
+        for item in self.m_static:
+
+            if self.m_check:
+                fitskey = self._m_config_port.get_attribute(item)
+
+                if isinstance(fitskey, np.bytes_):
+                    fitskey = str(fitskey.decode("utf-8"))
+
+                if fitskey != "None":
+                    if fitskey in header:
+                        status = self.m_image_out_port_1.check_static_attribute(item,
+                                                                              header[fitskey])
+
+                        if status == 1:
+                            self.m_image_out_port_1.add_attribute(item,
+                                                                header[fitskey],
+                                                                static=True)
+
+                        if status == -1:
+                            warnings.warn("Static attribute %s has changed. Possibly the current "
+                                          "file %s does not belong to the data set '%s'. Attribute "
+                                          "value is updated." \
+                                          % (fitskey, fits_file, self.m_image_out_port_1.tag))
+
+                        elif status == 0:
+                            pass
+
+                    else:
+                        warnings.warn("Static attribute %s (=%s) not found in the FITS header." \
+                                      % (item, fitskey))
+
+        return None
+
+    def _non_static_attributes(self, header):
+        """
+        Internal function which adds the non-static attributes to the central database.
+
+        :param header: Header information from the FITS file that is read.
+        :type header: astropy FITS header
+
+        :return: None
+        """
+
+        for item in self.m_non_static:
+            if self.m_check:
+                if item in header:
+                    self.m_image_out_port_1.append_attribute_data(item, header[item])
+
+                else:
+                    if self.m_attributes[item]["config"] == "header":
+                        fitskey = self._m_config_port.get_attribute(item)
+
+                        # if type(fitskey) == np.bytes_:
+                        #     fitskey = str(fitskey.decode("utf-8"))
+
+                        if fitskey != "None":
+                            if fitskey in header:
+                                self.m_image_out_port_1.append_attribute_data(item, header[fitskey])
+
+                            elif header['NAXIS'] == 2 and item == 'NFRAMES':
+                                self.m_image_out_port_1.append_attribute_data(item, 1)
+
+                            else:
+                                warnings.warn("Non-static attribute %s (=%s) not found in the "
+                                              "FITS header." % (item, fitskey))
+
+                                self.m_image_out_port_1.append_attribute_data(item, -1)
+
+        return None
+
+    def _extra_attributes(self, fits_file, location, shape):
+        """
+        Internal function which adds extra attributes to the central database.
+
+        :param fits_file: Name of the FITS file.
+        :type fits_file: str
+        :param location: Directory where the FITS file is located.
+        :type location: str
+        :param shape: Shape of the images.
+        :type shape: tuple(int)
+
+        :return: None
+        """
+
+        pixscale = self._m_config_port.get_attribute('PIXSCALE')
+
+        if len(shape) == 2:
+            nimages = 1
+        elif len(shape) == 3:
+            nimages = shape[0]
+
+        index = np.arange(self.m_count, self.m_count+nimages, 1)
+
+        for _, item in enumerate(index):
+            self.m_image_out_port_1.append_attribute_data("INDEX", item)
+
+        self.m_image_out_port_1.append_attribute_data("FILES", location+fits_file)
+        self.m_image_out_port_1.add_attribute("PIXSCALE", pixscale, static=True)
+
+        self.m_count += nimages
 
         return None
 
@@ -133,9 +279,16 @@ class VisirBurstModule(ProcessingModule):
         #print(chopa.shape)
         #print(chopb.shape)
 
+        fits_header = []
+        for key in head:
+            fits_header.append(str(key)+" = "+str(head[key]))
+
         hdulist.close()
 
-        return chopa, chopb, nod, head
+        header_out_port = self.add_output_port('fits_header/'+image_file)
+        header_out_port.set_all(fits_header)
+
+        return chopa, chopb, nod, head, images.shape
 
     def _none(self, images):
 
@@ -163,12 +316,21 @@ class VisirBurstModule(ProcessingModule):
         image_in = glob.glob(self.m_im_dir + '*.fits')
         image_in = np.sort(image_in)
 
+        location = os.path.join(self.m_im_dir, '')
+
+        files = []
+        for filename in os.listdir(location):
+            if filename.endswith('.fits'):
+                files.append(filename)
+
+        files.sort()
+
         assert(image_in), "No FITS files found in {}".format(self.m_im_dir)
 
         for i, im in enumerate(image_in):
             progress(i, len(image_in), "\rRunnig VisirBurstModule...")
 
-            chopa, chopb, nod, header = self.open_fit(im)
+            chopa, chopb, nod, header, shape = self.open_fit(im)
 
             if nod == "A":
                 if countera == 0:
@@ -189,7 +351,12 @@ class VisirBurstModule(ProcessingModule):
                     chopb_nodb = np.append(chopb_nodb, chopb, axis=0)
 
             # Collect header data
-            self._static_attributes(im, header)
+            self._static_attributes(files[i], header)
+            self._non_static_attributes(header)
+            self._extra_attributes(files[i], location, shape)
+            #FitsReadingModule._static_attributes(self, files[i], header)
+            #FitsReadingModule._non_static_attributes(self, header)
+            #FitsReadingModule._extra_attributes(self, files[i], location, shape)
 
         print("Shape of chopa_noda: ", chopa_noda.shape)
         print("Shape of chopb_noda: ", chopb_noda.shape)
