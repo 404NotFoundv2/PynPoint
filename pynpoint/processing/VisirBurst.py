@@ -8,8 +8,9 @@ import glob
 import math
 import timeit
 import os
+import sys
 from pynpoint.core.processing import ProcessingModule
-from pynpoint.util.module import progress, memory_frames, number_images_port
+from pynpoint.util.module import progress
 import multiprocessing as mp
 from multiprocessing import Pool
 import functools
@@ -95,7 +96,9 @@ class VisirBurstModule(ProcessingModule):
 
         nimages = int(head_small['NAXIS3'])
         ndit = int(head['ESO DET NDIT'])
-        images = hdulist[1].data
+        nod = head['ESO SEQ NODPOS']
+
+        images = hdulist[1].data.byteswap().newbyteorder()
 
         # Put them in different fit/chop files
         chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
@@ -103,20 +106,9 @@ class VisirBurstModule(ProcessingModule):
         shareda = sharedmem.empty(chopa.shape)
         sharedb = sharedmem.empty(chopb.shape)
 
-
         start_time = timeit.default_timer()
 
-        #if __name__ == "__main__":
-        #pool = mp.Pool(2)
-        #func = functools.partial(self.chop_splitting, ndit, nimages)
-        #pool.map(self.chop_splitting, range(nimages))
-
-        #pool.close()
-        #pool.join()
-
-        #result = np.asarray(result)
-
-        #'''
+        ''' Multiprocessing, but in this case slower
         processes = []
         for i in range(nimages):
             process = mp.Process(target=self.chop_splitting, args=(ndit, images, shareda, sharedb, i))
@@ -125,28 +117,25 @@ class VisirBurstModule(ProcessingModule):
 
         for process in processes:
             process.join()
-        #'''
-
-        #print(shareda[:,0,0])
-
-        #for i in range(nimages):
-        #    chopa, chopb = self.chop_splitting(ndit, images, chopa, chopb, i)
-
         '''
-        chopa, chopb = shareda, sharedb
-        '''
+
+        for i in range(nimages):
+            self.chop_splitting(ndit, images, shareda, sharedb, i)
+
         elapsed = timeit.default_timer() - start_time
-        print("Time it took to evaluate: \t", np.round(elapsed,2), "seconds")
+        print("Time it took to evaluate: \t", np.round(elapsed, 2), "seconds")
 
-        '''
+        chopa[:, :, :] = shareda[:, :, :]
+        chopb[:, :, :] = sharedb[:, :, :]
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
-        print(chopa.shape)
-        print(chopb.shape)
-        '''
-        #hdulist.close()
+        #print(chopa[:, 0, 0])
+        #print(chopa.shape)
+        #print(chopb.shape)
 
-        return None
+        hdulist.close()
+
+        return chopa, chopb, nod, head
 
     def _none(self, images):
 
@@ -161,42 +150,60 @@ class VisirBurstModule(ProcessingModule):
         return images_comb
 
     def run(self):
-        # Check if inpu tags are correct
+        # Check if input tags are correct
         self._initialize()
+
+        sys.stdout.write("Running VirirBurstModule...")
+        sys.stdout.flush()
+
+        countera = 0
+        counterb = 0
 
         # Open each fit file
         image_in = glob.glob(self.m_im_dir + '*.fits')
-        for im in image_in:
-            self.open_fit(im)
+        image_in = np.sort(image_in)
 
-        '''
-        frames = memory_frames(memory, nimages)
+        assert(image_in), "No FITS files found in {}".format(self.m_im_dir)
 
-        # Move trough the seperate frames blocks
-        for i, f in enumerate(frames[:-1]):
-            progress(i, (len(frames)-1),
-                     "Running VisirBurstModule...")
+        for i, im in enumerate(image_in):
+            progress(i, len(image_in), "\rRunnig VisirBurstModule...")
 
-            frame_start = np.array(frames[i])
-            frame_end = np.array(frames[i+1])
+            chopa, chopb, nod, header = self.open_fit(im)
 
-            images = self.m_image_in_port[frame_start:frame_end, ]
+            if nod == "A":
+                if countera == 0:
+                    chopa_noda = chopa
+                    chopb_noda = chopb
+                    countera = 1
+                else:
+                    chopa_noda = np.append(chopa_noda, chopa, axis=0)
+                    chopb_noda = np.append(chopb_noda, chopb, axis=0)
 
-            if self.m_method == "mean":
-                images_combined = self._mean(images)
+            if nod == "B":
+                if counterb == 0:
+                    chopa_nodb = chopa
+                    chopb_nodb = chopb
+                    counterb = 1
+                else:
+                    chopa_nodb = np.append(chopa_nodb, chopa, axis=0)
+                    chopb_nodb = np.append(chopb_nodb, chopb, axis=0)
 
-            elif self.m_method == "median":
-                images_combined = self._median(images)
+            # Collect header data
+            self._static_attributes(im, header)
 
-            if self.m_method == None:
-                images_combined = self._none(images)
+        print("Shape of chopa_noda: ", chopa_noda.shape)
+        print("Shape of chopb_noda: ", chopb_noda.shape)
+        #print("Shape of chopa_nodb: ", chopa_nodb.shape)
+        #print("Shape of chopb_nodb: ", chopb_nodb.shape)
 
-            self.m_image_out_port.append(images_combined)
-        '''
-        images_combined = np.array([])
-        self.m_image_out_port_1.append(images_combined)
-        self.m_image_out_port_2.append(images_combined)
-        #self.m_image_out_port.add_history_information(
-        #    "VisirBurstModule", self.m_method)
+        sys.stdout.write("\rRunning VirirBurstModule...[DONE]\n")
+        sys.stdout.flush()
+
+        self.m_image_out_port_1.set_all(chopa_noda, data_dim=3)
+        self.m_image_out_port_2.set_all(chopb_noda, data_dim=3)
+        #self.m_image_out_port_1.add_history_information("VisirBurstModule", self.m_method)
+        #self.m_image_out_port_2.add_history_information("VisirBurstModule", self.m_method)
+        self.m_image_out_port_1.flush()
+        self.m_image_out_port_2.flush()
         self.m_image_out_port_1.close_port()
         self.m_image_out_port_2.close_port()
