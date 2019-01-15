@@ -135,20 +135,34 @@ class VisirBurstModule(ReadingModule):
 
                 if fitskey != "None":
                     if fitskey in header:
-                        if self.m_image_out_port_1 is not None:
+                        try:
                             status = self.m_image_out_port_1.check_static_attribute(item,
                                                                                     header[fitskey])
-                        if self.m_image_out_port_2 is not None:
+                        except KeyError:
+                            sys.stdout.write(
+                                "\nThe output tag {} is empty".format(self.m_image_out_port_1.tag))
+                            sys.stdout.flush()
+                        try:
                             status = self.m_image_out_port_2.check_static_attribute(item,
                                                                                     header[fitskey])
-                        '''
-                        if self.m_image_out_port_3 is not None:
+                        except KeyError:
+                            sys.stdout.write(
+                                "\nThe output tag {} is empty".format(self.m_image_out_port_2.tag))
+                            sys.stdout.flush()
+                        try:
                             status = self.m_image_out_port_3.check_static_attribute(item,
                                                                                     header[fitskey])
-                        if self.m_image_out_port_4 is not None:
+                        except KeyError:
+                            sys.stdout.write(
+                                "\nThe output tag {} is empty".format(self.m_image_out_port_3.tag))
+                            sys.stdout.flush()
+                        try:
                             status = self.m_image_out_port_4.check_static_attribute(item,
                                                                                     header[fitskey])
-                        '''
+                        except KeyError:
+                            sys.stdout.write(
+                                "\nThe output tag {} is empty".format(self.m_image_out_port_4.tag))
+                            sys.stdout.flush()
 
                         if status == 1:
                             with warnings.catch_warnings():
@@ -197,8 +211,8 @@ class VisirBurstModule(ReadingModule):
                     if self.m_attributes[item]["config"] == "header":
                         fitskey = self._m_config_port.get_attribute(item)
 
-                        # if type(fitskey) == np.bytes_:
-                        #     fitskey = str(fitskey.decode("utf-8"))
+                        if type(fitskey) == np.bytes_:
+                            fitskey = str(fitskey.decode("utf-8"))
 
                         if fitskey != "None":
                             if fitskey in header:
@@ -296,7 +310,8 @@ class VisirBurstModule(ReadingModule):
             self.chop_splitting(ndit, images, shareda, sharedb, i)
 
         elapsed = timeit.default_timer() - start_time
-        sys.stdout.write("\r\t\t\t\t\t\t----" + str(np.round(elapsed, 2)) + " seconds\r")
+        sys.stdout.write("\r\t\t\t\t\t\t---" + str(np.round(elapsed, 2)) + " seconds\r")
+        sys.stdout.flush()
 
         chopa[:, :, :] = shareda[:, :, :]
         chopb[:, :, :] = sharedb[:, :, :]
@@ -312,7 +327,7 @@ class VisirBurstModule(ReadingModule):
         header_out_port = self.add_output_port('fits_header/'+image_file)
         header_out_port.set_all(fits_header)
 
-        return chopa, chopb, nod, head, images.shape
+        return chopa, chopb, nod, head, head_small, images.shape
 
     def _none(self, images):
 
@@ -351,7 +366,12 @@ class VisirBurstModule(ReadingModule):
         for i, im in enumerate(files):
             progress(i, len(files), "\rRunnig VisirBurstModule...")
 
-            chopa, chopb, nod, header, shape = self.open_fit(location, im)
+            chopa, chopb, nod, header_large, header_small, shape = self.open_fit(location, im)
+            #header_large.remove("NAXIS")
+            print(header_large[:])
+            print(header.update(header_small))
+            #header = header_large.append(header_small)
+            #print(repr(header))
 
             if nod == "A":
                 if countera == 0:
@@ -379,11 +399,11 @@ class VisirBurstModule(ReadingModule):
 
             # Collect header data
             self._static_attributes(files[i], header)
-            #self._non_static_attributes(header)
+            self._non_static_attributes(header)
             #self._extra_attributes(files[i], location, shape)
 
-        print("Shape of chopa_noda: ", chopa_noda.shape)
-        print("Shape of chopb_noda: ", chopb_noda.shape)
+        #print("Shape of chopa_noda: ", chopa_noda.shape)
+        #print("Shape of chopb_noda: ", chopb_noda.shape)
         #print("Shape of chopa_nodb: ", chopa_nodb.shape)
         #print("Shape of chopb_nodb: ", chopb_nodb.shape)
 
