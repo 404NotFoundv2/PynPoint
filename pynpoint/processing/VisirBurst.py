@@ -10,33 +10,22 @@ import math
 import timeit
 import sys
 import six
+import warnings
 from pynpoint.core.processing import ProcessingModule, ReadingModule
 from pynpoint.util.module import progress
 from pynpoint.core.attributes import get_attributes
-from pynpoint.readwrite.fitsreading import FitsReadingModule
-#_static_attributes, _non_static_attributes, _extra_attributes
-
-#import os
-#import multiprocessing as mp
-#from multiprocessing import Pool
-#import functools
-#from pathos.multiprocessing import ProcessingPool
-#os.system('taskset -p 0x48 %d' % os.getpid())
-#print("Restricted to ... cpu: ", os.sched_getaffinity(0))
-#print("Number of cpu: ", mp.cpu_count())
-#import psutil
-#all_cpus = list(range(psutil.cpu_count()))
-#p = psutil.Process()
-#p.cpu_affinity(all_cpus)
-#os.system("taskset -p 0xff %d" % os.getpid())
+# from pynpoint.readwrite.fitsreading import FitsReadingModule
+# _static_attributes, _non_static_attributes, _extra_attributes
 
 
-class VisirBurstModule(ReadingModule, ProcessingModule):
+class VisirBurstModule(ReadingModule):
     def __init__(self,
                  name_in="burst",
                  image_in_dir="im_in",
-                 image_out_tag_1="chopa",
-                 image_out_tag_2="chopb",
+                 image_out_tag_1="noda_chopa",
+                 image_out_tag_2="noda_chopb",
+                 image_out_tag_3="nodb_chopa",
+                 image_out_tag_4="nodb_chopb",
                  method="median",
                  check=True,
                  overwrite=True):
@@ -60,6 +49,8 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
         # Port
         self.m_image_out_port_1 = self.add_output_port(image_out_tag_1)
         self.m_image_out_port_2 = self.add_output_port(image_out_tag_2)
+        self.m_image_out_port_3 = self.add_output_port(image_out_tag_3)
+        self.m_image_out_port_4 = self.add_output_port(image_out_tag_4)
 
         # Parameters
         self.m_method = method
@@ -88,12 +79,19 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
         Function that clears the __init__ tags if they are not
         empty given incorrect input
         """
+        tag = [self.m_image_out_port_1.tag,
+               self.m_image_out_port_2.tag,
+               self.m_image_out_port_3.tag,
+               self.m_image_out_port_4.tag]
 
-        if self.m_image_out_port_1 is not None or self.m_image_out_port_2 is not None:
-            if self.m_image_out_port_1.tag == self.m_image_out_port_2.tag:
+        seen = set()
+        for i in tag:
+            if i in seen:
                 raise ValueError("Output ports should have different tags")
+            if i not in seen:
+                seen.add(i)
 
-        if self.m_method != "median" and self.m_method != "mean" and self.m_method != None:
+        if self.m_method != "median" and self.m_method != "mean" and self.m_method is not None:
             raise ValueError("The parameter method should be set to "
                              "'median', 'mean' or None")
 
@@ -104,6 +102,14 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
         if self.m_image_out_port_2 is not None:
             self.m_image_out_port_2.del_all_data()
             self.m_image_out_port_2.del_all_attributes()
+
+        if self.m_image_out_port_3 is not None:
+            self.m_image_out_port_3.del_all_data()
+            self.m_image_out_port_3.del_all_attributes()
+
+        if self.m_image_out_port_4 is not None:
+            self.m_image_out_port_4.del_all_data()
+            self.m_image_out_port_4.del_all_attributes()
 
         return None
 
@@ -129,25 +135,45 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
 
                 if fitskey != "None":
                     if fitskey in header:
-                        status = self.m_image_out_port_1.check_static_attribute(item,
-                                                                              header[fitskey])
+                        if self.m_image_out_port_1 is not None:
+                            status = self.m_image_out_port_1.check_static_attribute(item,
+                                                                                    header[fitskey])
+                        if self.m_image_out_port_2 is not None:
+                            status = self.m_image_out_port_2.check_static_attribute(item,
+                                                                                    header[fitskey])
+                        '''
+                        if self.m_image_out_port_3 is not None:
+                            status = self.m_image_out_port_3.check_static_attribute(item,
+                                                                                    header[fitskey])
+                        if self.m_image_out_port_4 is not None:
+                            status = self.m_image_out_port_4.check_static_attribute(item,
+                                                                                    header[fitskey])
+                        '''
 
                         if status == 1:
-                            self.m_image_out_port_1.add_attribute(item,
-                                                                header[fitskey],
-                                                                static=True)
+                            with warnings.catch_warnings():
+                                warnings.simplefilter("ignore")
+
+                                self.m_image_out_port_1.add_attribute(item, header[fitskey],
+                                                                      static=True)
+                                self.m_image_out_port_2.add_attribute(item, header[fitskey],
+                                                                      static=True)
+                                self.m_image_out_port_3.add_attribute(item, header[fitskey],
+                                                                      static=True)
+                                self.m_image_out_port_4.add_attribute(item, header[fitskey],
+                                                                      static=True)
 
                         if status == -1:
                             warnings.warn("Static attribute %s has changed. Possibly the current "
                                           "file %s does not belong to the data set '%s'. Attribute "
-                                          "value is updated." \
-                                          % (fitskey, fits_file, self.m_image_out_port_1.tag))
+                                          "value is updated."
+                                          % (fitskey, fits_file, self.output.tag))
 
                         elif status == 0:
                             pass
 
                     else:
-                        warnings.warn("Static attribute %s (=%s) not found in the FITS header." \
+                        warnings.warn("Static attribute %s (=%s) not found in the FITS header."
                                       % (item, fitskey))
 
         return None
@@ -234,8 +260,8 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
 
         return None
 
-    def open_fit(self, image_file):
-        hdulist = fits.open(image_file)
+    def open_fit(self, location, image_file):
+        hdulist = fits.open(location + image_file)
 
         head = hdulist[0].header
         head_small = hdulist[1].header
@@ -257,7 +283,8 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
         ''' Multiprocessing, but in this case slower
         processes = []
         for i in range(nimages):
-            process = mp.Process(target=self.chop_splitting, args=(ndit, images, shareda, sharedb, i))
+            process = mp.Process(target=self.chop_splitting,
+                                 args=(ndit, images, shareda, sharedb, i))
             processes.append(process)
             process.start()
 
@@ -269,15 +296,12 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
             self.chop_splitting(ndit, images, shareda, sharedb, i)
 
         elapsed = timeit.default_timer() - start_time
-        print("Time it took to evaluate: \t", np.round(elapsed, 2), "seconds")
+        sys.stdout.write("\r\t\t\t\t\t\t----" + str(np.round(elapsed, 2)) + " seconds\r")
 
         chopa[:, :, :] = shareda[:, :, :]
         chopb[:, :, :] = sharedb[:, :, :]
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
-        #print(chopa[:, 0, 0])
-        #print(chopa.shape)
-        #print(chopb.shape)
 
         fits_header = []
         for key in head:
@@ -313,9 +337,6 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
         counterb = 0
 
         # Open each fit file
-        image_in = glob.glob(self.m_im_dir + '*.fits')
-        image_in = np.sort(image_in)
-
         location = os.path.join(self.m_im_dir, '')
 
         files = []
@@ -325,12 +346,12 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
 
         files.sort()
 
-        assert(image_in), "No FITS files found in {}".format(self.m_im_dir)
+        assert(files), "No FITS files found in {}".format(self.m_im_dir)
 
-        for i, im in enumerate(image_in):
-            progress(i, len(image_in), "\rRunnig VisirBurstModule...")
+        for i, im in enumerate(files):
+            progress(i, len(files), "\rRunnig VisirBurstModule...")
 
-            chopa, chopb, nod, header, shape = self.open_fit(im)
+            chopa, chopb, nod, header, shape = self.open_fit(location, im)
 
             if nod == "A":
                 if countera == 0:
@@ -341,6 +362,9 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
                     chopa_noda = np.append(chopa_noda, chopa, axis=0)
                     chopb_noda = np.append(chopb_noda, chopb, axis=0)
 
+                self.m_image_out_port_1.append(chopa_noda, data_dim=3)
+                self.m_image_out_port_2.append(chopb_noda, data_dim=3)
+
             if nod == "B":
                 if counterb == 0:
                     chopa_nodb = chopa
@@ -350,13 +374,13 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
                     chopa_nodb = np.append(chopa_nodb, chopa, axis=0)
                     chopb_nodb = np.append(chopb_nodb, chopb, axis=0)
 
+                self.m_image_out_port_3.append(chopa_nodb, data_dim=3)
+                self.m_image_out_port_4.append(chopb_nodb, data_dim=3)
+
             # Collect header data
             self._static_attributes(files[i], header)
-            self._non_static_attributes(header)
-            self._extra_attributes(files[i], location, shape)
-            #FitsReadingModule._static_attributes(self, files[i], header)
-            #FitsReadingModule._non_static_attributes(self, header)
-            #FitsReadingModule._extra_attributes(self, files[i], location, shape)
+            #self._non_static_attributes(header)
+            #self._extra_attributes(files[i], location, shape)
 
         print("Shape of chopa_noda: ", chopa_noda.shape)
         print("Shape of chopb_noda: ", chopb_noda.shape)
@@ -366,11 +390,13 @@ class VisirBurstModule(ReadingModule, ProcessingModule):
         sys.stdout.write("\rRunning VirirBurstModule...[DONE]\n")
         sys.stdout.flush()
 
-        self.m_image_out_port_1.set_all(chopa_noda, data_dim=3)
-        self.m_image_out_port_2.set_all(chopb_noda, data_dim=3)
+        #self.m_image_out_port_1.set_all(chopa_noda, data_dim=3)
+        #self.m_image_out_port_2.set_all(chopb_noda, data_dim=3)
         #self.m_image_out_port_1.add_history_information("VisirBurstModule", self.m_method)
         #self.m_image_out_port_2.add_history_information("VisirBurstModule", self.m_method)
-        self.m_image_out_port_1.flush()
-        self.m_image_out_port_2.flush()
+        #self.m_image_out_port_1.flush()
+        #self.m_image_out_port_2.flush()
         self.m_image_out_port_1.close_port()
         self.m_image_out_port_2.close_port()
+        self.m_image_out_port_3.close_port()
+        self.m_image_out_port_4.close_port()
