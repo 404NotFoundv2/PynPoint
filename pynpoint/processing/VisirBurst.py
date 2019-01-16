@@ -23,20 +23,27 @@ class VisirBurstModule(ReadingModule):
                  image_out_tag_2="noda_chopb",
                  image_out_tag_3="nodb_chopa",
                  image_out_tag_4="nodb_chopb",
-                 method="median",
                  check=True,
                  overwrite=True):
         '''
         Constructor of the VisirBurtModule
         :param name_in: Unique name of the instance
         :type name_in: str
-        :param image_in_tag: Entry of the database used as input of the module
-        :type image_in_tag: str
-        :param image_out_tag: Entry written as output
-        :type image_out_tag: str
-        :param method: Method used for combining the frames, median, mean or None to use no
-        averaging.
-        :type method: str
+        :param image_in_dir: Entry directory of the database used as input of the module
+        :type image_in_dir: str
+        :param image_out_tag_1: Entry written as output, Nod A -> Chop A
+        :type image_out_tag_1: str
+        :param image_out_tag_1: Entry written as output, Nod A -> Chop B
+        :type image_out_tag_2: str
+        :param image_out_tag_1: Entry written as output, Nod B -> Chop A
+        :type image_out_tag_3: str
+        :param image_out_tag_1: Entry written as output, Nod B -> Chop B
+        :type image_out_tag_4: str
+        :param check: Check all the listed non-static attributes or ignore the attributes that
+                      are not always required (e.g. PARANG_START, DITHER_X).
+        :type check: bool
+        :param overwrite: Overwrite existing data and header in the central database.
+        :type overwrite: bool
 
         return None
         '''
@@ -50,7 +57,6 @@ class VisirBurstModule(ReadingModule):
         self.m_image_out_port_4 = self.add_output_port(image_out_tag_4)
 
         # Parameters
-        self.m_method = method
         self.m_im_dir = image_in_dir
         self.m_check = check
         self.m_overwrite = overwrite
@@ -88,9 +94,11 @@ class VisirBurstModule(ReadingModule):
             if i not in seen:
                 seen.add(i)
 
-        if self.m_method != "median" and self.m_method != "mean" and self.m_method is not None:
-            raise ValueError("The parameter method should be set to "
-                             "'median', 'mean' or None")
+        if not isinstance(self.m_check, bool):
+            raise ValueError("Check port should be set to 'True' or 'False'")
+
+        if not isinstance(self.m_overwrite, bool):
+            raise ValueError("Overwrite port should be set to 'True' or 'False'")
 
         if self.m_image_out_port_1 is not None:
             self.m_image_out_port_1.del_all_data()
@@ -110,7 +118,7 @@ class VisirBurstModule(ReadingModule):
 
         return None
 
-    def _static_attributes(self, fits_file, header, i, j):
+    def _static_attributes(self, fits_file, header, iteration, end):
         """
         Internal function which adds the static attributes to the central database.
 
@@ -121,6 +129,8 @@ class VisirBurstModule(ReadingModule):
 
         :return: None
         """
+
+        a, b, c, d = 0, 0, 0, 0
 
         for item in self.m_static:
 
@@ -140,48 +150,57 @@ class VisirBurstModule(ReadingModule):
                             status = self.m_image_out_port_1.check_static_attribute(item,
                                                                                     header[fitskey])
                         except KeyError:
-                            if i == j:
+                            # This only outputs the error for the last fits file,otherwise it spawns
+                            if iteration == end and a == 0:
                                 sys.stdout.write(
                                     "\n \033[93m The output tag {} is empty. There is no nodding "
                                     "postion A. Add input fit files that contain both nod A and "
                                     "nod B.\033[00m\n".format(self.m_image_out_port_1.tag))
                                 sys.stdout.flush()
+
+                                a = 1
                             else:
                                 pass
                         try:
                             status = self.m_image_out_port_2.check_static_attribute(item,
                                                                                     header[fitskey])
                         except KeyError:
-                            if i == j:
+                            if iteration == end and b == 0:
                                 sys.stdout.write(
                                     "\n \033[93m The output tag {} is empty. There is no nodding "
                                     "postion A. Add input fit files that contain both nod A and "
                                     "nod B.\033[00m\n".format(self.m_image_out_port_2.tag))
                                 sys.stdout.flush()
+
+                                b = 1
                             else:
                                 pass
                         try:
                             status = self.m_image_out_port_3.check_static_attribute(item,
                                                                                     header[fitskey])
                         except KeyError:
-                            if i == j:
+                            if iteration == end and c == 0:
                                 sys.stdout.write(
                                     "\n \033[93m The output tag {} is empty. There is no nodding "
                                     "postion B. Add input fit files that contain both nod A and "
                                     "nod B.\033[00m\n".format(self.m_image_out_port_3.tag))
                                 sys.stdout.flush()
+
+                                c = 1
                             else:
                                 pass
                         try:
                             status = self.m_image_out_port_4.check_static_attribute(item,
                                                                                     header[fitskey])
                         except KeyError:
-                            if i == j:
+                            if iteration == end and d == 0:
                                 sys.stdout.write(
                                     "\n \033[93m The output tag {} is empty. There is no nodding "
                                     "postion B. Add input fit files that contain both nod A and "
                                     "nod B.\033[00m\n".format(self.m_image_out_port_4.tag))
                                 sys.stdout.flush()
+
+                                d = 1
                             else:
                                 pass
 
@@ -262,7 +281,7 @@ class VisirBurstModule(ReadingModule):
 
         return None
 
-    def _extra_attributes(self, fits_file, location, shape):
+    def _extra_attributes(self, fits_file, location, shape, nod):
         """
         Internal function which adds extra attributes to the central database.
 
@@ -286,19 +305,23 @@ class VisirBurstModule(ReadingModule):
         index = np.arange(self.m_count, self.m_count+nimages, 1)
 
         for _, item in enumerate(index):
-            self.m_image_out_port_1.append_attribute_data("INDEX", item)
-            self.m_image_out_port_2.append_attribute_data("INDEX", item)
-            self.m_image_out_port_3.append_attribute_data("INDEX", item)
-            self.m_image_out_port_4.append_attribute_data("INDEX", item)
+            if nod == 'A':
+                self.m_image_out_port_1.append_attribute_data("INDEX", item)
+                self.m_image_out_port_2.append_attribute_data("INDEX", item)
+            elif nod == 'B':
+                self.m_image_out_port_3.append_attribute_data("INDEX", item)
+                self.m_image_out_port_4.append_attribute_data("INDEX", item)
 
-        self.m_image_out_port_1.append_attribute_data("FILES", location+fits_file)
-        self.m_image_out_port_2.append_attribute_data("FILES", location+fits_file)
-        self.m_image_out_port_3.append_attribute_data("FILES", location+fits_file)
-        self.m_image_out_port_4.append_attribute_data("FILES", location+fits_file)
-        self.m_image_out_port_1.add_attribute("PIXSCALE", pixscale, static=True)
-        self.m_image_out_port_2.add_attribute("PIXSCALE", pixscale, static=True)
-        self.m_image_out_port_3.add_attribute("PIXSCALE", pixscale, static=True)
-        self.m_image_out_port_4.add_attribute("PIXSCALE", pixscale, static=True)
+        if nod == 'A':
+            self.m_image_out_port_1.append_attribute_data("FILES", location+fits_file)
+            self.m_image_out_port_2.append_attribute_data("FILES", location+fits_file)
+            self.m_image_out_port_1.add_attribute("PIXSCALE", pixscale, static=True)
+            self.m_image_out_port_2.add_attribute("PIXSCALE", pixscale, static=True)
+        elif nod == 'B':
+            self.m_image_out_port_3.append_attribute_data("FILES", location+fits_file)
+            self.m_image_out_port_4.append_attribute_data("FILES", location+fits_file)
+            self.m_image_out_port_3.add_attribute("PIXSCALE", pixscale, static=True)
+            self.m_image_out_port_4.add_attribute("PIXSCALE", pixscale, static=True)
 
         self.m_count += nimages
 
@@ -348,8 +371,6 @@ class VisirBurstModule(ReadingModule):
         shareda = sharedmem.empty(chopa.shape)
         sharedb = sharedmem.empty(chopb.shape)
 
-        start_time = timeit.default_timer()
-
         ''' Multiprocessing, but in this case slower
         processes = []
         for i in range(nimages):
@@ -364,10 +385,6 @@ class VisirBurstModule(ReadingModule):
 
         for i in range(nimages):
             self.chop_splitting(ndit, images, shareda, sharedb, i)
-
-        elapsed = timeit.default_timer() - start_time
-        sys.stdout.write("\r\t\t\t\t\t\t---" + str(np.round(elapsed, 2)) + " seconds\r")
-        sys.stdout.flush()
 
         chopa[:, :, :] = shareda[:, :, :]
         chopb[:, :, :] = sharedb[:, :, :]
@@ -384,18 +401,6 @@ class VisirBurstModule(ReadingModule):
         header_out_port.set_all(fits_header)
 
         return chopa, chopb, nod, head, head_small, images.shape
-
-    def _none(self, images):
-
-        return images_comb
-
-    def _mean(self, images):
-
-        return images_comb
-
-    def _median(self, images):
-
-        return images_comb
 
     def run(self):
         """
@@ -414,8 +419,7 @@ class VisirBurstModule(ReadingModule):
         sys.stdout.write("Running VirirBurstModule...")
         sys.stdout.flush()
 
-        countera = 0
-        counterb = 0
+        countera, counterb = 0, 0
 
         # Open each fit file
         location = os.path.join(self.m_im_dir, '')
@@ -431,6 +435,8 @@ class VisirBurstModule(ReadingModule):
 
         for i, im in enumerate(files):
             progress(i, len(files), "\rRunnig VisirBurstModule...")
+
+            start_time = timeit.default_timer()
 
             chopa, chopb, nod, header_large, header_small, shape = self.open_fit(location, im)
 
@@ -466,9 +472,13 @@ class VisirBurstModule(ReadingModule):
                 self.m_image_out_port_4.append(chopb_nodb, data_dim=3)
 
             # Collect header data
-            self._static_attributes(files[i], header, i, len(files))
+            self._static_attributes(files[i], header, i, len(files)-1)
             self._non_static_attributes(header)
-            self._extra_attributes(files[i], location, shape)
+            self._extra_attributes(files[i], location, shape, nod)
+
+            elapsed = timeit.default_timer() - start_time
+            sys.stdout.write("\r\t\t\t\t\t\t---" + str(np.round(elapsed, 2)) + " seconds")
+            sys.stdout.flush()
 
         # print("Shape of chopa_noda: ", chopa_noda.shape)
         # print("Shape of chopb_noda: ", chopb_noda.shape)
@@ -478,14 +488,10 @@ class VisirBurstModule(ReadingModule):
         sys.stdout.write("\rRunning VirirBurstModule...[DONE]\n")
         sys.stdout.flush()
 
-        self.m_image_out_port_1.add_history_information("VisirBurstModule", "Method: " +
-                                                        str(self.m_method))
-        self.m_image_out_port_2.add_history_information("VisirBurstModule", "Method: " +
-                                                        str(self.m_method))
-        self.m_image_out_port_3.add_history_information("VisirBurstModule", "Method: " +
-                                                        str(self.m_method))
-        self.m_image_out_port_4.add_history_information("VisirBurstModule", "Method: " +
-                                                        str(self.m_method))
+        self.m_image_out_port_1.add_history_information("VisirBurstModule", "Nod A, Chop A")
+        self.m_image_out_port_2.add_history_information("VisirBurstModule", "Nod A, Chop B")
+        self.m_image_out_port_3.add_history_information("VisirBurstModule", "Nod B, Chop A")
+        self.m_image_out_port_4.add_history_information("VisirBurstModule", "Nod B, Chop B")
         self.m_image_out_port_1.close_port()
         self.m_image_out_port_2.close_port()
         self.m_image_out_port_3.close_port()
