@@ -110,7 +110,7 @@ class VisirBurstModule(ReadingModule):
 
         return None
 
-    def _static_attributes(self, fits_file, header):
+    def _static_attributes(self, fits_file, header, i, j):
         """
         Internal function which adds the static attributes to the central database.
 
@@ -132,42 +132,58 @@ class VisirBurstModule(ReadingModule):
 
                 if fitskey != "None":
                     if fitskey in header:
+                        # Fix: Only show the error when reaching final iteration of fits files.
+                        # -seems to be working now. Now correct for the second warnining, can not
+                        # save attribute while no data exists - might not be in this function. Run
+                        # the function seperately
                         try:
                             status = self.m_image_out_port_1.check_static_attribute(item,
                                                                                     header[fitskey])
                         except KeyError:
-                            sys.stdout.write(
-                                "\n \033[93m The output tag {} is empty. There is no nodding "
-                                "postion A. Add input fit files that contain both nod A and "
-                                "nod B.\033[00m\n".format(self.m_image_out_port_1.tag))
-                            sys.stdout.flush()
+                            if i == j:
+                                sys.stdout.write(
+                                    "\n \033[93m The output tag {} is empty. There is no nodding "
+                                    "postion A. Add input fit files that contain both nod A and "
+                                    "nod B.\033[00m\n".format(self.m_image_out_port_1.tag))
+                                sys.stdout.flush()
+                            else:
+                                pass
                         try:
                             status = self.m_image_out_port_2.check_static_attribute(item,
                                                                                     header[fitskey])
                         except KeyError:
-                            sys.stdout.write(
-                                "\n \033[93m The output tag {} is empty. There is no nodding "
-                                "postion A. Add input fit files that contain both nod A and "
-                                "nod B.\033[00m\n".format(self.m_image_out_port_2.tag))
-                            sys.stdout.flush()
+                            if i == j:
+                                sys.stdout.write(
+                                    "\n \033[93m The output tag {} is empty. There is no nodding "
+                                    "postion A. Add input fit files that contain both nod A and "
+                                    "nod B.\033[00m\n".format(self.m_image_out_port_2.tag))
+                                sys.stdout.flush()
+                            else:
+                                pass
                         try:
                             status = self.m_image_out_port_3.check_static_attribute(item,
                                                                                     header[fitskey])
                         except KeyError:
-                            sys.stdout.write(
-                                "\n \033[93m The output tag {} is empty. There is no nodding "
-                                "postion B. Add input fit files that contain both nod A and "
-                                "nod B.\033[00m\n".format(self.m_image_out_port_3.tag))
-                            sys.stdout.flush()
+                            if i == j:
+                                sys.stdout.write(
+                                    "\n \033[93m The output tag {} is empty. There is no nodding "
+                                    "postion B. Add input fit files that contain both nod A and "
+                                    "nod B.\033[00m\n".format(self.m_image_out_port_3.tag))
+                                sys.stdout.flush()
+                            else:
+                                pass
                         try:
                             status = self.m_image_out_port_4.check_static_attribute(item,
                                                                                     header[fitskey])
                         except KeyError:
-                            sys.stdout.write(
-                                "\n \033[93m The output tag {} is empty. There is no nodding "
-                                "postion B. Add input fit files that contain both nod A and "
-                                "nod B.\033[00m\n".format(self.m_image_out_port_4.tag))
-                            sys.stdout.flush()
+                            if i == j:
+                                sys.stdout.write(
+                                    "\n \033[93m The output tag {} is empty. There is no nodding "
+                                    "postion B. Add input fit files that contain both nod A and "
+                                    "nod B.\033[00m\n".format(self.m_image_out_port_4.tag))
+                                sys.stdout.flush()
+                            else:
+                                pass
 
                         if status == 1:
                             with warnings.catch_warnings():
@@ -450,7 +466,7 @@ class VisirBurstModule(ReadingModule):
                 self.m_image_out_port_4.append(chopb_nodb, data_dim=3)
 
             # Collect header data
-            self._static_attributes(files[i], header)
+            self._static_attributes(files[i], header, i, len(files))
             self._non_static_attributes(header)
             self._extra_attributes(files[i], location, shape)
 
