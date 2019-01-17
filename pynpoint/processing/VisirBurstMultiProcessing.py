@@ -13,6 +13,8 @@ import warnings
 from pynpoint.core.processing import ReadingModule
 from pynpoint.util.module import progress
 from pynpoint.core.attributes import get_attributes
+from threading import Thread
+from functools import partial
 
 
 class VisirBurstModule(ReadingModule):
@@ -411,6 +413,58 @@ class VisirBurstModule(ReadingModule):
 
         return chopa, chopb, nod, header, images.shape
 
+    def MultiProcess(self, location, im):
+        """
+        Multiprocessing Multiple files as input
+
+        return None
+        """
+
+        start_time = timeit.default_timer()
+
+        chopa, chopb, nod, header, shape = self.open_fit(location, im)
+
+        if nod == "A":
+            if countera == 0:
+                chopa_noda = chopa
+                chopb_noda = chopb
+                countera = 1
+            else:
+                chopa_noda = np.append(chopa_noda, chopa, axis=0)
+                chopb_noda = np.append(chopb_noda, chopb, axis=0)
+
+            self.m_image_out_port_1.append(chopa_noda, data_dim=3)
+            self.m_image_out_port_2.append(chopb_noda, data_dim=3)
+
+        if nod == "B":
+            if counterb == 0:
+                chopa_nodb = chopa
+                chopb_nodb = chopb
+                counterb = 1
+            else:
+                chopa_nodb = np.append(chopa_nodb, chopa, axis=0)
+                chopb_nodb = np.append(chopb_nodb, chopb, axis=0)
+
+            self.m_image_out_port_3.append(chopa_nodb, data_dim=3)
+            self.m_image_out_port_4.append(chopb_nodb, data_dim=3)
+
+        # Collect header data
+        self._static_attributes(files[i], header, i, len(files)-1)
+        self._non_static_attributes(header)
+        self._extra_attributes(files[i], location, shape, nod)
+
+        self.m_image_out_port_1.flush()
+        self.m_image_out_port_2.flush()
+        self.m_image_out_port_3.flush()
+        self.m_image_out_port_4.flush()
+
+        elapsed = timeit.default_timer() - start_time
+        sys.stdout.write("\r\t\t\t\t\t\t---" + str(np.round(elapsed, 2)) + " seconds")
+        sys.stdout.flush()
+
+
+        return None
+
     def run(self):
         """
         Run the module. The module first checks the tags for uniquenes. The fit files from the
@@ -445,47 +499,12 @@ class VisirBurstModule(ReadingModule):
         for i, im in enumerate(files):
             progress(i, len(files), "\rRunnig VisirBurstModule...")
 
-            start_time = timeit.default_timer()
+            func = partial(self.MultiProcess, location)
 
-            chopa, chopb, nod, header, shape = self.open_fit(location, im)
+            t = Thread(func, args=(im, ))
+            t.start()
+            t.join()
 
-            if nod == "A":
-                if countera == 0:
-                    chopa_noda = chopa
-                    chopb_noda = chopb
-                    countera = 1
-                else:
-                    chopa_noda = np.append(chopa_noda, chopa, axis=0)
-                    chopb_noda = np.append(chopb_noda, chopb, axis=0)
-
-                self.m_image_out_port_1.append(chopa_noda, data_dim=3)
-                self.m_image_out_port_2.append(chopb_noda, data_dim=3)
-
-            if nod == "B":
-                if counterb == 0:
-                    chopa_nodb = chopa
-                    chopb_nodb = chopb
-                    counterb = 1
-                else:
-                    chopa_nodb = np.append(chopa_nodb, chopa, axis=0)
-                    chopb_nodb = np.append(chopb_nodb, chopb, axis=0)
-
-                self.m_image_out_port_3.append(chopa_nodb, data_dim=3)
-                self.m_image_out_port_4.append(chopb_nodb, data_dim=3)
-
-            # Collect header data
-            self._static_attributes(files[i], header, i, len(files)-1)
-            self._non_static_attributes(header)
-            self._extra_attributes(files[i], location, shape, nod)
-
-            self.m_image_out_port_1.flush()
-            self.m_image_out_port_2.flush()
-            self.m_image_out_port_3.flush()
-            self.m_image_out_port_4.flush()
-
-            elapsed = timeit.default_timer() - start_time
-            sys.stdout.write("\r\t\t\t\t\t\t---" + str(np.round(elapsed, 2)) + " seconds")
-            sys.stdout.flush()
 
         # print("Shape of chopa_noda: ", chopa_noda.shape)
         # print("Shape of chopb_noda: ", chopb_noda.shape)

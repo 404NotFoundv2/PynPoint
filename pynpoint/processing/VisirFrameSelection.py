@@ -9,6 +9,7 @@ from pynpoint.util.module import progress, memory_frames, \
 import math
 import warnings
 
+
 class VisirFrameSelectionModule(ProcessingModule):
     def __init__(self,
                  name_in="frame_selection",
@@ -200,9 +201,11 @@ class VisirFrameSelectionModule(ProcessingModule):
         Masking of single frame
         '''
 
+        pixscale = self.m_image_in_port.get_attribute("PIXSCALE")
+
         starpos = np.zeros((2), dtype=np.int64)
         fwhm_starps = int(math.ceil(float(self.m_fwhm) /
-                                    (float(self.m_pixscale))))
+                                    (pixscale)))
 
         starpos[:] = locate_star(image=science_frame,
                                  center=None,
@@ -253,11 +256,11 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         memory = self._m_config_port.get_attribute("MEMORY")
         nimages = number_images_port(self.m_image_in_port)
+        # pixscale = self._m_config_port.get_attribute("PIXSCALE")
 
-        if self.m_num_ref is None or self.m_num_ref > nimages or \
-            self.m_num_ref == 0:
-                self.m_num_ref = nimages
-        
+        if self.m_num_ref is None or self.m_num_ref > nimages or self.m_num_ref == 0:
+            self.m_num_ref = nimages
+
         if self.m_num_ref > memory:
             self.m_num_ref = memory
             warnings.warn("The number of references set is larger than "
@@ -323,10 +326,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         indexx = self.m_image_in_port.get_attribute("INDEX")
         #print indexx
         parang = self.m_image_in_port.get_attribute("PARANG")
-        #print parang    
-
-        self.m_pixscale = self.m_image_in_port.get_attribute("PIXSCALE")
-        self.m_aperture = self.m_aperture/self.m_pixscale
+        #print parang
 
         im_shape = self.m_image_in_port.get_shape()
         nimages = im_shape[0]
@@ -334,7 +334,7 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         self._initialize()
         frames_removed = self.frame()
-        
+
         #print "length parang: ", len(parang)
         frames_removed_new = frames_removed[::-1]
         for i, f in enumerate(frames_removed_new):
@@ -344,24 +344,21 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         history = "Number of frames removed ="+str(len(frames_removed))
 
-        self.m_image_out_port.copy_attributes_from_input_port(
-            self.m_image_in_port)
-        self.m_image_out_port_2.copy_attributes_from_input_port(
-            self.m_image_in_port)
+        self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
+        self.m_image_out_port_2.copy_attributes_from_input_port(self.m_image_in_port)
 
-        self.m_image_out_port.add_attribute("INDEX",
-                     np.arange(0, (nimages-len(frames_removed)), 1), static=False)
+        self.m_image_out_port.add_attribute("INDEX", np.arange(0, (nimages-len(frames_removed)),
+                                                               1), static=False)
         self.m_image_out_port.add_attribute("PARANG", parang, static=False)
         print("Number frames removed: ", len(frames_removed))
         non_static = self.m_image_in_port.get_all_non_static_attributes()
+
         if "NFRAMES" in non_static:
             self.m_image_out_port.del_attribute("NFRAMES")
-        
-        self.m_image_out_port.add_attribute("Frames_Removed",
-                                            frames_removed,
+
+        self.m_image_out_port.add_attribute("Frames_Removed", frames_removed,
                                             static=False)
-        self.m_image_out_port.add_history_information("FrameSelectionModule",
-                                                      history)
+        self.m_image_out_port.add_history_information("FrameSelectionModule", history)
         self.m_image_out_port.close_port()
         self.m_image_out_port_2.close_port()
         self.m_image_out_port_3.close_port()
