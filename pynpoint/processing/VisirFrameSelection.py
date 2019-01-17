@@ -176,14 +176,14 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         for i in range(mean.shape[0]):
             if mean[i] <= (tot_mean - self.m_sigma*sigma_mean) or \
-                mean[i] >= (tot_mean + self.m_sigma*sigma_mean):
-                    index = np.append(index, i)
+                    mean[i] >= (tot_mean + self.m_sigma*sigma_mean):
+                index = np.append(index, i)
 
         index_rev = index[::-1]
 
         for i in index_rev:
                 # print "science_out.shape = ", science_out.shape
-                #print "Frame % : ", '{:.0f}'.format((index_rev[0]-i)/index_rev[0]*100.) ,  "    limit- ", '{:.2f}'.format(tot_mean-self.m_sigma*sigma_mean), "    mean: ", '{:.2f}'.format(mean[i]), "    limit+ ", '{:.2f}'.format(tot_mean+self.m_sigma*sigma_mean)
+                # print "Frame % : ", '{:.0f}'.format((index_rev[0]-i)/index_rev[0]*100.) ,  "    limit- ", '{:.2f}'.format(tot_mean-self.m_sigma*sigma_mean), "    mean: ", '{:.2f}'.format(mean[i]), "    limit+ ", '{:.2f}'.format(tot_mean+self.m_sigma*sigma_mean)
                 science_out = np.delete(science_out, i, 0)
 
         im_rem = np.zeros((len(index), science_in.shape[1],
@@ -302,7 +302,7 @@ class VisirFrameSelectionModule(ProcessingModule):
             frames_removed_idx = np.append(frames_removed_idx, idx)
 
             result = np.column_stack((mean, sig))
-            
+
             if i == 0:
                 print("Mean/Median = ", np.mean(mean))
                 print("Sigma = ", sig_tot)
@@ -322,33 +322,34 @@ class VisirFrameSelectionModule(ProcessingModule):
         Run the method of the module
         '''
         nframes = self.m_image_in_port.get_attribute("NFRAMES")
-        #print nframes
+        # print nframes
         indexx = self.m_image_in_port.get_attribute("INDEX")
-        #print indexx
+        # print indexx
         parang = self.m_image_in_port.get_attribute("PARANG")
-        #print parang
+        # print parang
 
         im_shape = self.m_image_in_port.get_shape()
         nimages = im_shape[0]
-        #print nimages
+        # print nimages
 
         self._initialize()
         frames_removed = self.frame()
 
-        #print "length parang: ", len(parang)
+        # print "length parang: ", len(parang)
         frames_removed_new = frames_removed[::-1]
         for i, f in enumerate(frames_removed_new):
             parang = np.delete(parang, f)
-        #print "length parang now: ", len(parang)
-        #print "length frames: ", (nimages-len(frames_removed))
+        # print "length parang now: ", len(parang)
+        # print "length frames: ", (nimages-len(frames_removed))
 
         history = "Number of frames removed ="+str(len(frames_removed))
 
         self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
         self.m_image_out_port_2.copy_attributes_from_input_port(self.m_image_in_port)
 
-        self.m_image_out_port.add_attribute("INDEX", np.arange(0, (nimages-len(frames_removed)),
-                                                               1), static=False)
+        self.m_image_out_port.add_attribute("INDEX",
+                                            np.arange(0, (nimages-len(frames_removed)), 1),
+                                            static=False)
         self.m_image_out_port.add_attribute("PARANG", parang, static=False)
         print("Number frames removed: ", len(frames_removed))
         non_static = self.m_image_in_port.get_all_non_static_attributes()

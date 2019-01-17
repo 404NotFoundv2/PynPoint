@@ -74,6 +74,7 @@ class VisirBurstNodInverterModule(ProcessingModule):
 
         shape_1 = self.m_image_in_port1.get_shape()
         shape_2 = self.m_image_in_port2.get_shape()
+
         if shape_1 != shape_2:
             warnings.warn("Input image size should be the same. Image shape 1 {}, "
                           "is not equal to Image size 2 {}".format(shape_1, shape_2))
@@ -86,9 +87,9 @@ class VisirBurstNodInverterModule(ProcessingModule):
 
         self.m_image_out_port1.set_all(data_output)
 
-        #self.m_image_out_port1.copy_attributes_from_input_port(self.m_image_in_port1)
-        #self.m_image_out_port1.add_history_information("VisirBurstNodInverterModule",
-        #                                               "Combined Nod BurstMode")
+        self.m_image_out_port1.copy_attributes_from_input_port(self.m_image_in_port1)
+        self.m_image_out_port1.add_history_information("VisirBurstNodInverterModule",
+                                                       "Combined Nod BurstMode")
 
         sys.stdout.write("\rRunning VISIRBurstNodInverterModule... [DONE]\n")
         sys.stdout.flush()

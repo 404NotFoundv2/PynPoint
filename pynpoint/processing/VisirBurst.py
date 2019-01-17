@@ -23,6 +23,7 @@ class VisirBurstModule(ReadingModule):
                  image_out_tag_2="noda_chopb",
                  image_out_tag_3="nodb_chopa",
                  image_out_tag_4="nodb_chopb",
+                 pupilstabilized=True,
                  check=True,
                  overwrite=True):
         '''
@@ -39,6 +40,9 @@ class VisirBurstModule(ReadingModule):
         :type image_out_tag_3: str
         :param image_out_tag_1: Entry written as output, Nod B -> Chop B
         :type image_out_tag_4: str
+        :param pupilstabilized: Define whether the dataset is pupilstabilized (TRUE) or
+            fieldstabilized (FALSE)
+        :type pupilstabilized: bool
         :param check: Check all the listed non-static attributes or ignore the attributes that
                       are not always required (e.g. PARANG_START, DITHER_X).
         :type check: bool
@@ -58,6 +62,7 @@ class VisirBurstModule(ReadingModule):
 
         # Parameters
         self.m_im_dir = image_in_dir
+        self.m_pupil_stabilized = pupilstabilized
         self.m_check = check
         self.m_overwrite = overwrite
 
@@ -142,10 +147,6 @@ class VisirBurstModule(ReadingModule):
 
                 if fitskey != "None":
                     if fitskey in header:
-                        # Fix: Only show the error when reaching final iteration of fits files.
-                        # -seems to be working now. Now correct for the second warnining, can not
-                        # save attribute while no data exists - might not be in this function. Run
-                        # the function seperately
                         try:
                             status = self.m_image_out_port_1.check_static_attribute(item,
                                                                                     header[fitskey])
@@ -269,6 +270,29 @@ class VisirBurstModule(ReadingModule):
                                 self.m_image_out_port_2.append_attribute_data(item, 1)
                                 self.m_image_out_port_3.append_attribute_data(item, 1)
                                 self.m_image_out_port_4.append_attribute_data(item, 1)
+
+                            elif self.m_pupil_stabilized is False:
+                                if fitskey == "ESO ADA POSANG END" or fitskey == "ESO ADA POSANG":
+                                    self.m_image_out_port_1.append_attribute_data(
+                                        "ESO ADA POSANG", 0)
+                                    self.m_image_out_port_1.append_attribute_data(
+                                        "ESO ADA POSANG END", 0)
+                                    self.m_image_out_port_2.append_attribute_data(
+                                        "ESO ADA POSANG", 0)
+                                    self.m_image_out_port_2.append_attribute_data(
+                                        "ESO ADA POSANG END", 0)
+                                    self.m_image_out_port_3.append_attribute_data(
+                                        "ESO ADA POSANG", 0)
+                                    self.m_image_out_port_3.append_attribute_data(
+                                        "ESO ADA POSANG END", 0)
+                                    self.m_image_out_port_4.append_attribute_data(
+                                        "ESO ADA POSANG", 0)
+                                    self.m_image_out_port_4.append_attribute_data(
+                                        "ESO ADA POSANG END", 0)
+
+                                elif fitskey == "ESO ADA PUPILPOS":
+                                    self.m_image_out_port_1.append_attribute_data(
+                                        "ESO ADA PUPILPOS", 0)
 
                             else:
                                 warnings.warn("Non-static attribute %s (=%s) not found in the "

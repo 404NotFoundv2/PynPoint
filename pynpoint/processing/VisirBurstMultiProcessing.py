@@ -14,10 +14,9 @@ from pynpoint.core.processing import ReadingModule
 from pynpoint.util.module import progress
 from pynpoint.core.attributes import get_attributes
 from threading import Thread
-from functools import partial
 
 
-class VisirBurstModule(ReadingModule):
+class VisirBurstModule_(ReadingModule):
     def __init__(self,
                  name_in="burst",
                  image_in_dir="im_in",
@@ -50,7 +49,7 @@ class VisirBurstModule(ReadingModule):
         return None
         '''
 
-        super(VisirBurstModule, self).__init__(name_in)
+        super(VisirBurstModule_, self).__init__(name_in)
 
         # Port
         self.m_image_out_port_1 = self.add_output_port(image_out_tag_1)
@@ -413,14 +412,14 @@ class VisirBurstModule(ReadingModule):
 
         return chopa, chopb, nod, header, images.shape
 
-    def MultiProcess(self, location, im):
+    def MultiProcess(self, location, im, files, i):
         """
         Multiprocessing Multiple files as input
 
         return None
         """
 
-        start_time = timeit.default_timer()
+        countera, counterb = 0, 0
 
         chopa, chopb, nod, header, shape = self.open_fit(location, im)
 
@@ -458,11 +457,6 @@ class VisirBurstModule(ReadingModule):
         self.m_image_out_port_3.flush()
         self.m_image_out_port_4.flush()
 
-        elapsed = timeit.default_timer() - start_time
-        sys.stdout.write("\r\t\t\t\t\t\t---" + str(np.round(elapsed, 2)) + " seconds")
-        sys.stdout.flush()
-
-
         return None
 
     def run(self):
@@ -477,12 +471,12 @@ class VisirBurstModule(ReadingModule):
         return None
         """
 
+        start_time = timeit.default_timer()
+
         self._initialize()
 
         sys.stdout.write("Running VirirBurstModule...")
         sys.stdout.flush()
-
-        countera, counterb = 0, 0
 
         # Open each fit file
         location = os.path.join(self.m_im_dir, '')
@@ -496,15 +490,28 @@ class VisirBurstModule(ReadingModule):
 
         assert(files), "No FITS files found in {}".format(self.m_im_dir)
 
+        cpu = self._m_config_port.get_attribute("CPU")
+
+        threads = []
         for i, im in enumerate(files):
-            progress(i, len(files), "\rRunnig VisirBurstModule...")
+            #progress(i, len(files), "\rRunnig VisirBurstModule...")
 
-            func = partial(self.MultiProcess, location)
+            # p = Process(target=self.MultiProcess, args=(location, im, files, i))
+            # p.start()
+            # p.join()
 
-            t = Thread(func, args=(im, ))
-            t.start()
-            t.join()
+            t = Thread(target=self.MultiProcess, args=(location, im, files, i, ))
+            threads.append(t)
 
+        for j in threads:
+            j.start()
+
+        for j in threads:
+            j.join()
+
+        elapsed = timeit.default_timer() - start_time
+        sys.stdout.write("\r\t\t\t\t\t\t---" + str(np.round(elapsed, 2)) + " seconds")
+        sys.stdout.flush()
 
         # print("Shape of chopa_noda: ", chopa_noda.shape)
         # print("Shape of chopb_noda: ", chopb_noda.shape)
