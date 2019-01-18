@@ -105,6 +105,12 @@ class VisirBurstModule(ReadingModule):
             if i not in seen:
                 seen.add(i)
 
+        if not isinstance(self.m_burst, bool):
+            raise ValueError("Burst port should be set to 'True' or 'False'")
+
+        if not isinstance(self.m_pupil_stabilized, bool):
+            raise ValueError("Pupilstabilized port should be set to 'True' or 'False'")
+
         if not isinstance(self.m_check, bool):
             raise ValueError("Check port should be set to 'True' or 'False'")
 
@@ -488,8 +494,8 @@ class VisirBurstModule(ReadingModule):
             header.append(("NAXIS3", nimages))
 
         # Put them in different fit/chop files
-        chopa = np.zeros((int(nimages/2 + 2), image.shape[0], image.shape[1]))
-        chopb = np.zeros((int(nimages/2 + 2), image.shape[0], image.shape[1]))
+        chopa = np.zeros((int(nimages/2 + 1), image.shape[0], image.shape[1]))
+        chopb = np.zeros((int(nimages/2 + 1), image.shape[0], image.shape[1]))
 
         images = np.zeros((nimages, image.shape[0], image.shape[1]))
         for i in range(1, nimages+1):
@@ -497,7 +503,7 @@ class VisirBurstModule(ReadingModule):
 
         count_im_1, count_im_2 = 0, 0
 
-        start_time = timeit.default_timer()
+        # start_time = timeit.default_timer()
 
         for i in range(0, nimages):
             cycle = hdulist[i+1].header['HIERARCH ESO DET FRAM TYPE']
@@ -514,10 +520,10 @@ class VisirBurstModule(ReadingModule):
                 warnings.warn("The chop position(=HIERARCH ESO DET FRAM TYPE) could not be found"
                               "from the header(small). Iteration: {}".format(i))
 
-        elapsed = timeit.default_timer() - start_time
-        sys.stdout.write(
-            "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
-        sys.stdout.flush()
+        # elapsed = timeit.default_timer() - start_time
+        # sys.stdout.write(
+        #     "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
+        # sys.stdout.flush()
 
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
@@ -601,8 +607,8 @@ class VisirBurstModule(ReadingModule):
         # Check if the files are compressed, if so; uncompress
         self.uncompress()
 
-        # sys.stdout.write("\rRunning VirirBurstModule...")
-        # sys.stdout.flush()
+        sys.stdout.write("\rRunning VISIRInitializationModule...")
+        sys.stdout.flush()
 
         countera, counterb = 0, 0
 
@@ -667,10 +673,10 @@ class VisirBurstModule(ReadingModule):
             #     "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
             # sys.stdout.flush()
 
-        print("Shape of chopa_noda: ", chopa_noda.shape)
-        print("Shape of chopb_noda: ", chopb_noda.shape)
-        print("Shape of chopa_nodb: ", chopa_nodb.shape)
-        print("Shape of chopb_nodb: ", chopb_nodb.shape)
+        # print("Shape of chopa_noda: ", chopa_noda.shape)
+        # print("Shape of chopb_noda: ", chopb_noda.shape)
+        # print("Shape of chopa_nodb: ", chopa_nodb.shape)
+        # print("Shape of chopb_nodb: ", chopb_nodb.shape)
 
         sys.stdout.write("\rRunning VISIRInitializationModule...[DONE]\n")
         sys.stdout.flush()
