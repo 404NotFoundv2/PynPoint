@@ -260,8 +260,6 @@ class VisirBurstModule(ReadingModule):
                 else:
                     if self.m_attributes[item]["config"] == "header":
                         fitskey = self._m_config_port.get_attribute(item)
-                        print("FITSKEY: ", fitskey)
-                        print("item: ", item)
 
                         if type(fitskey) == np.bytes_:
                             fitskey = str(fitskey.decode("utf-8"))
@@ -397,7 +395,7 @@ class VisirBurstModule(ReadingModule):
 
         for f in files:
             if f.endswith('.fits.Z'):
-                files_compressed.append(f)
+                files_compressed.append(location + f)
 
         if len(files_compressed) > cpu:
             # Split the threads into smaller chunks
@@ -408,19 +406,37 @@ class VisirBurstModule(ReadingModule):
             pass
 
         else:
-            sys.stdout.write("\rRunning VirirBurstModule... Uncompressing files ...")
+            sys.stdout.write("\rRunning VISIRInitializationModule... Uncompressing files ...")
             sys.stdout.flush()
 
-            jobs = []
-            for i, filename in enumerate(files_compressed):
-                thread = threading.Thread(target=self._uncompress_multi, args=(filename,))
-                jobs.append(thread)
+            # First check if the number of files is not larger than cpu
+            amount = len(files_compressed)
+            if amount > cpu:
+                for i in range(math.ceil(amount/cpu)):
+                    files_compressed_chunk = files_compressed[cpu*i:min(cpu*(i+1), amount)]
 
-            for j in jobs:
-                j.start()
+                    jobs = []
+                    for i, filename in enumerate(files_compressed_chunk):
+                        thread = threading.Thread(target=self._uncompress_multi, args=(filename,))
+                        jobs.append(thread)
 
-            for j in jobs:
-                j.join()
+                    for j in jobs:
+                        j.start()
+
+                    for j in jobs:
+                        j.join()
+
+            else:
+                jobs = []
+                for i, filename in enumerate(files_compressed):
+                    thread = threading.Thread(target=self._uncompress_multi, args=(filename,))
+                    jobs.append(thread)
+
+                for j in jobs:
+                    j.start()
+
+                for j in jobs:
+                    j.join()
 
         return None
 
@@ -433,6 +449,8 @@ class VisirBurstModule(ReadingModule):
         return None
         """
 
+        # a: The first 0:ndit will contain chopa, the ndit:2*ndit contains chopb
+        # b & c: Calculates at which chop-cycle we are
         a = i % (2*ndit)
         b = math.floor(i / (2*ndit))
         c = int(b*ndit)
@@ -452,34 +470,33 @@ class VisirBurstModule(ReadingModule):
         return chopa, chopb, nod, head, head_small, images.shape
         """
         hdulist = fits.open(location + image_file)
+        image = hdulist[1].data.byteswap().newbyteorder()
 
+        nimages = len(hdulist) - 2
         head = hdulist[0].header
         head_small = hdulist[1].header
-
-        nimages = int(head_small['NAXIS3'])
-        ndit = int(head['ESO DET NDIT'])
+        ndit = 1
         nod = head['ESO SEQ NODPOS']
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
+            # Add attributes?: NAXIS3
 
             head.remove("NAXIS")
             header = head.copy()
             header.update(head_small)
 
-        images = hdulist[1].data.byteswap().newbyteorder()
-
         # Put them in different fit/chop files
-        chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
-        chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
-        shareda = sharedmem.empty(chopa.shape)
-        sharedb = sharedmem.empty(chopb.shape)
+        chopa = np.zeros((int(nimages/2 + ndit), image.shape[0], image.shape[1]))
+        chopb = np.zeros((int(nimages/2 + ndit), image.shape[0], image.shape[1]))
 
-        for i in range(nimages):
-            self.chop_splitting(ndit, images, shareda, sharedb, i)
+        images = np.zeros((nimages, image.shape[0], image.shape[1]))
+        for i in range(1, nimages):
+            images[i-1, :, :] = hdulist[i].data.byteswap().newbyteorder()
 
-        chopa[:, :, :] = shareda[:, :, :]
-        chopb[:, :, :] = sharedb[:, :, :]
+        for i in range(1, nimages):
+            self.chop_splitting(ndit, images, chopa, chopb, i)
+
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
 
@@ -562,8 +579,8 @@ class VisirBurstModule(ReadingModule):
         # Check if the files are compressed, if so; uncompress
         self.uncompress()
 
-        sys.stdout.write("\rRunning VirirBurstModule...")
-        sys.stdout.flush()
+        # sys.stdout.write("\rRunning VirirBurstModule...")
+        # sys.stdout.flush()
 
         countera, counterb = 0, 0
 
@@ -580,7 +597,7 @@ class VisirBurstModule(ReadingModule):
         assert(files), "No FITS files found in {}".format(self.m_im_dir)
 
         for i, im in enumerate(files):
-            progress(i, len(files), "\rRunnig VisirBurstModule...")
+            progress(i, len(files), "\rRunnig VISIRInitializationModule...")
 
             start_time = timeit.default_timer()
 
@@ -624,7 +641,8 @@ class VisirBurstModule(ReadingModule):
             self.m_image_out_port_4.flush()
 
             elapsed = timeit.default_timer() - start_time
-            sys.stdout.write("\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
+            sys.stdout.write(
+                "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
             sys.stdout.flush()
 
         # print("Shape of chopa_noda: ", chopa_noda.shape)
@@ -632,7 +650,7 @@ class VisirBurstModule(ReadingModule):
         # print("Shape of chopa_nodb: ", chopa_nodb.shape)
         # print("Shape of chopb_nodb: ", chopb_nodb.shape)
 
-        sys.stdout.write("\rRunning VirirBurstModule...[DONE]\n")
+        sys.stdout.write("\rRunning VISIRInitializationModule...[DONE]\n")
         sys.stdout.flush()
 
         self.m_image_out_port_1.add_history_information("VisirBurstModule", "Nod A, Chop A")
