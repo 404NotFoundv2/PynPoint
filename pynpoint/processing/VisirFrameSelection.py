@@ -325,7 +325,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         # print nframes
         indexx = self.m_image_in_port.get_attribute("INDEX")
         # print indexx
-        parang = self.m_image_in_port.get_attribute("PARANG")
+        parang = self.m_image_in_port.get_attribute("PARANG_START") #PARANG_START?
         # print parang
 
         im_shape = self.m_image_in_port.get_shape()
@@ -336,9 +336,10 @@ class VisirFrameSelectionModule(ProcessingModule):
         frames_removed = self.frame()
 
         # print "length parang: ", len(parang)
-        frames_removed_new = frames_removed[::-1]
-        for i, f in enumerate(frames_removed_new):
-            parang = np.delete(parang, f)
+        # Check this: should be here
+            # frames_removed_new = frames_removed[::-1]
+            # for i, f in enumerate(frames_removed_new):
+            #     parang = np.delete(parang, f)
         # print "length parang now: ", len(parang)
         # print "length frames: ", (nimages-len(frames_removed))
 

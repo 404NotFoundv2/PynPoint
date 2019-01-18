@@ -5,6 +5,7 @@ import numpy as np
 import sharedmem
 from astropy.io import fits
 import os
+import subprocess
 import math
 import timeit
 import sys
@@ -13,6 +14,7 @@ import warnings
 from pynpoint.core.processing import ReadingModule
 from pynpoint.util.module import progress
 from pynpoint.core.attributes import get_attributes
+import threading
 
 
 class VisirBurstModule(ReadingModule):
@@ -23,6 +25,7 @@ class VisirBurstModule(ReadingModule):
                  image_out_tag_2="noda_chopb",
                  image_out_tag_3="nodb_chopa",
                  image_out_tag_4="nodb_chopb",
+                 burst=False,
                  pupilstabilized=True,
                  check=True,
                  overwrite=True):
@@ -40,6 +43,8 @@ class VisirBurstModule(ReadingModule):
         :type image_out_tag_3: str
         :param image_out_tag_1: Entry written as output, Nod B -> Chop B
         :type image_out_tag_4: str
+        :param burst: Whether the data is taken in burst mode or not
+        :type burst: bool
         :param pupilstabilized: Define whether the dataset is pupilstabilized (TRUE) or
             fieldstabilized (FALSE)
         :type pupilstabilized: bool
@@ -62,6 +67,7 @@ class VisirBurstModule(ReadingModule):
 
         # Parameters
         self.m_im_dir = image_in_dir
+        self.m_burst = burst
         self.m_pupil_stabilized = pupilstabilized
         self.m_check = check
         self.m_overwrite = overwrite
@@ -254,6 +260,8 @@ class VisirBurstModule(ReadingModule):
                 else:
                     if self.m_attributes[item]["config"] == "header":
                         fitskey = self._m_config_port.get_attribute(item)
+                        print("FITSKEY: ", fitskey)
+                        print("item: ", item)
 
                         if type(fitskey) == np.bytes_:
                             fitskey = str(fitskey.decode("utf-8"))
@@ -274,25 +282,31 @@ class VisirBurstModule(ReadingModule):
                             elif self.m_pupil_stabilized is False:
                                 if fitskey == "ESO ADA POSANG END" or fitskey == "ESO ADA POSANG":
                                     self.m_image_out_port_1.append_attribute_data(
-                                        "ESO ADA POSANG", 0)
+                                        "PARANG_START", 0.)
                                     self.m_image_out_port_1.append_attribute_data(
-                                        "ESO ADA POSANG END", 0)
+                                        "PARANG_END", 0.)
                                     self.m_image_out_port_2.append_attribute_data(
-                                        "ESO ADA POSANG", 0)
+                                        "PARANG_START", 0.)
                                     self.m_image_out_port_2.append_attribute_data(
-                                        "ESO ADA POSANG END", 0)
+                                        "PARANG_END", 0.)
                                     self.m_image_out_port_3.append_attribute_data(
-                                        "ESO ADA POSANG", 0)
+                                        "PARANG_START", 0.)
                                     self.m_image_out_port_3.append_attribute_data(
-                                        "ESO ADA POSANG END", 0)
+                                        "PARANG_END", 0.)
                                     self.m_image_out_port_4.append_attribute_data(
-                                        "ESO ADA POSANG", 0)
+                                        "PARANG_START", 0.)
                                     self.m_image_out_port_4.append_attribute_data(
-                                        "ESO ADA POSANG END", 0)
+                                        "PARANG_END", 0.)
 
                                 elif fitskey == "ESO ADA PUPILPOS":
                                     self.m_image_out_port_1.append_attribute_data(
-                                        "ESO ADA PUPILPOS", 0)
+                                        item, 0.)
+                                    self.m_image_out_port_2.append_attribute_data(
+                                        item, 0.)
+                                    self.m_image_out_port_3.append_attribute_data(
+                                        item, 0.)
+                                    self.m_image_out_port_4.append_attribute_data(
+                                        item, 0.)
 
                             else:
                                 warnings.warn("Non-static attribute %s (=%s) not found in the "
@@ -353,6 +367,63 @@ class VisirBurstModule(ReadingModule):
 
         return None
 
+    def _uncompress_multi(self, filename):
+        """
+        Subfuction of -uncompress- used for threading.
+        It uncompresses the file -filename-
+
+        return None
+        """
+
+        command = "uncompress " + filename
+        subprocess.check_call(command.split())
+
+        return None
+
+    def uncompress(self):
+        """
+        This function checks the input directory if it contains any compressed files ending with
+        '.fits.Z'. If this is the case, it will uncompress these using multithreading. This is much
+        faster than uncompressing when having multiple files
+
+        return None
+        """
+
+        cpu = self._m_config_port.get_attribute("CPU")
+
+        location = os.path.join(self.m_im_dir, '')
+        files = os.listdir(location)
+        files_compressed = []
+
+        for f in files:
+            if f.endswith('.fits.Z'):
+                files_compressed.append(f)
+
+        if len(files_compressed) > cpu:
+            # Split the threads into smaller chunks
+            # Not implemented yet
+            pass
+
+        if len(files_compressed) == 0:
+            pass
+
+        else:
+            sys.stdout.write("\rRunning VirirBurstModule... Uncompressing files ...")
+            sys.stdout.flush()
+
+            jobs = []
+            for i, filename in enumerate(files_compressed):
+                thread = threading.Thread(target=self._uncompress_multi, args=(filename,))
+                jobs.append(thread)
+
+            for j in jobs:
+                j.start()
+
+            for j in jobs:
+                j.join()
+
+        return None
+
     def chop_splitting(self, ndit, images, chopa, chopb, i):
         """
         Function that splits the images-tag into 2 different tags, chop A and chop B. The splitting
@@ -404,23 +475,62 @@ class VisirBurstModule(ReadingModule):
         shareda = sharedmem.empty(chopa.shape)
         sharedb = sharedmem.empty(chopb.shape)
 
-        ''' Multiprocessing, but in this case slower
-        processes = []
-        for i in range(nimages):
-            process = mp.Process(target=self.chop_splitting,
-                                 args=(ndit, images, shareda, sharedb, i))
-            processes.append(process)
-            process.start()
-
-        for process in processes:
-            process.join()
-        '''
-
         for i in range(nimages):
             self.chop_splitting(ndit, images, shareda, sharedb, i)
 
         chopa[:, :, :] = shareda[:, :, :]
         chopb[:, :, :] = sharedb[:, :, :]
+        chopa = chopa[chopa[:, 0, 0] != 0, :, :]
+        chopb = chopb[chopb[:, 0, 0] != 0, :, :]
+
+        fits_header = []
+        for key in header:
+            fits_header.append(str(key)+" = "+str(header[key]))
+
+        hdulist.close()
+
+        header_out_port = self.add_output_port('fits_header/'+image_file)
+        header_out_port.set_all(fits_header)
+
+        return chopa, chopb, nod, header, images.shape
+
+    def open_fit_burst(self, location, image_file):
+        """
+        Function that opens the fit file at --location + image_file--. It returns the input image
+        file into chop A and chop B, including the header data.
+
+        return chopa, chopb, nod, head, head_small, images.shape
+        """
+        hdulist = fits.open(location + image_file)
+
+        head = hdulist[0].header
+        head_small = hdulist[1].header
+
+        nimages = int(head_small['NAXIS3'])
+        ndit = int(head['ESO DET NDIT'])
+        nod = head['ESO SEQ NODPOS']
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            head.remove("NAXIS")
+            header = head.copy()
+            header.update(head_small)
+
+        images = hdulist[1].data.byteswap().newbyteorder()
+
+        # Put them in different fit/chop files
+        chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
+        chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
+        # shareda = sharedmem.empty(chopa.shape)
+        # sharedb = sharedmem.empty(chopb.shape)
+
+        for i in range(nimages):
+            # self.chop_splitting(ndit, images, shareda, sharedb, i)
+            self.chop_splitting(ndit, images, chopa, chopb, i)
+
+        # chopa[:, :, :] = shareda[:, :, :]
+        # chopb[:, :, :] = sharedb[:, :, :]
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
 
@@ -449,7 +559,10 @@ class VisirBurstModule(ReadingModule):
 
         self._initialize()
 
-        sys.stdout.write("Running VirirBurstModule...")
+        # Check if the files are compressed, if so; uncompress
+        self.uncompress()
+
+        sys.stdout.write("\rRunning VirirBurstModule...")
         sys.stdout.flush()
 
         countera, counterb = 0, 0
@@ -471,7 +584,10 @@ class VisirBurstModule(ReadingModule):
 
             start_time = timeit.default_timer()
 
-            chopa, chopb, nod, header, shape = self.open_fit(location, im)
+            if self.m_burst is True:
+                chopa, chopb, nod, header, shape = self.open_fit_burst(location, im)
+            elif self.m_burst is False:
+                chopa, chopb, nod, header, shape = self.open_fit(location, im)
 
             if nod == "A":
                 if countera == 0:
@@ -508,7 +624,7 @@ class VisirBurstModule(ReadingModule):
             self.m_image_out_port_4.flush()
 
             elapsed = timeit.default_timer() - start_time
-            sys.stdout.write("\r\t\t\t\t\t\t---" + str(np.round(elapsed, 2)) + " seconds")
+            sys.stdout.write("\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
             sys.stdout.flush()
 
         # print("Shape of chopa_noda: ", chopa_noda.shape)
