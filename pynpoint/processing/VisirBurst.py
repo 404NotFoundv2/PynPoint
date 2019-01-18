@@ -445,6 +445,7 @@ class VisirBurstModule(ReadingModule):
         Function that splits the images-tag into 2 different tags, chop A and chop B. The splitting
         is done by the parameter ndit, the number of frames taken each chop. Any NDITSKIP (not from
         overhead, but for some other reason) is not taken into account.
+        It is only called in the Burst mode
 
         return None
         """
@@ -475,27 +476,48 @@ class VisirBurstModule(ReadingModule):
         nimages = len(hdulist) - 2
         head = hdulist[0].header
         head_small = hdulist[1].header
-        ndit = 1
         nod = head['ESO SEQ NODPOS']
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            # Add attributes?: NAXIS3
 
             head.remove("NAXIS")
+            head_small.remove("NAXIS")
             header = head.copy()
             header.update(head_small)
+            header.append(("NAXIS3", nimages))
 
         # Put them in different fit/chop files
-        chopa = np.zeros((int(nimages/2 + ndit), image.shape[0], image.shape[1]))
-        chopb = np.zeros((int(nimages/2 + ndit), image.shape[0], image.shape[1]))
+        chopa = np.zeros((int(nimages/2 + 2), image.shape[0], image.shape[1]))
+        chopb = np.zeros((int(nimages/2 + 2), image.shape[0], image.shape[1]))
 
         images = np.zeros((nimages, image.shape[0], image.shape[1]))
-        for i in range(1, nimages):
+        for i in range(1, nimages+1):
             images[i-1, :, :] = hdulist[i].data.byteswap().newbyteorder()
 
-        for i in range(1, nimages):
-            self.chop_splitting(ndit, images, chopa, chopb, i)
+        count_im_1, count_im_2 = 0, 0
+
+        start_time = timeit.default_timer()
+
+        for i in range(0, nimages):
+            cycle = hdulist[i+1].header['HIERARCH ESO DET FRAM TYPE']
+
+            if cycle == 'HCYCLE1':
+                chopa[count_im_1, :, :] = images[i, :, :]
+                count_im_1 += 1
+
+            elif cycle == 'HCYCLE2':
+                chopb[count_im_2, :, :] = images[i, :, :]
+                count_im_2 += 1
+
+            else:
+                warnings.warn("The chop position(=HIERARCH ESO DET FRAM TYPE) could not be found"
+                              "from the header(small). Iteration: {}".format(i))
+
+        elapsed = timeit.default_timer() - start_time
+        sys.stdout.write(
+            "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
+        sys.stdout.flush()
 
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
@@ -597,9 +619,9 @@ class VisirBurstModule(ReadingModule):
         assert(files), "No FITS files found in {}".format(self.m_im_dir)
 
         for i, im in enumerate(files):
-            progress(i, len(files), "\rRunnig VISIRInitializationModule...")
+            progress(i, len(files), "\rRunning VISIRInitializationModule...")
 
-            start_time = timeit.default_timer()
+            # start_time = timeit.default_timer()
 
             if self.m_burst is True:
                 chopa, chopb, nod, header, shape = self.open_fit_burst(location, im)
@@ -640,15 +662,15 @@ class VisirBurstModule(ReadingModule):
             self.m_image_out_port_3.flush()
             self.m_image_out_port_4.flush()
 
-            elapsed = timeit.default_timer() - start_time
-            sys.stdout.write(
-                "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
-            sys.stdout.flush()
+            # elapsed = timeit.default_timer() - start_time
+            # sys.stdout.write(
+            #     "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
+            # sys.stdout.flush()
 
-        # print("Shape of chopa_noda: ", chopa_noda.shape)
-        # print("Shape of chopb_noda: ", chopb_noda.shape)
-        # print("Shape of chopa_nodb: ", chopa_nodb.shape)
-        # print("Shape of chopb_nodb: ", chopb_nodb.shape)
+        print("Shape of chopa_noda: ", chopa_noda.shape)
+        print("Shape of chopb_noda: ", chopb_noda.shape)
+        print("Shape of chopa_nodb: ", chopa_nodb.shape)
+        print("Shape of chopb_nodb: ", chopb_nodb.shape)
 
         sys.stdout.write("\rRunning VISIRInitializationModule...[DONE]\n")
         sys.stdout.flush()
