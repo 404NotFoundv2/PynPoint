@@ -84,7 +84,7 @@ from pynpoint.processing.VisirInverter import VisirInverterModule
 from pynpoint.processing.VisirNodSubtraction import VisirNodSubtractionModule
 from pynpoint.processing.VisirBurst import VisirBurstModule
 from pynpoint.processing.VisirBurstNodAddition import VisirBurstNodInverterModule
-from pynpoint.processing.VisirBurstMultiProcessing import VisirBurstModule_
+#from pynpoint.processing.VisirBurstMultiProcessing import VisirBurstModule_
 
 warnings.simplefilter('always', DeprecationWarning)
 

@@ -469,6 +469,31 @@ class VisirBurstModule(ReadingModule):
 
         return None
 
+    def chop_splitting_multiprocessing(self, hdulist, chopa, chopb, images, count_im_1, count_im_2,
+                                       i,):
+        """
+        REMOVE FUNCTION IF MULTIPROCESSING FOR CHOPA/CHOPB LIST DOESNT WORK
+        Multiprocessing function for filling chopa and chopb
+
+        return None
+        """
+
+        cycle = hdulist[i+1].header['HIERARCH ESO DET FRAM TYPE']
+
+        if cycle == 'HCYCLE1':
+            chopa[count_im_1, :, :] = images[i, :, :]
+            count_im_1 += 1
+
+        elif cycle == 'HCYCLE2':
+            chopb[count_im_2, :, :] = images[i, :, :]
+            count_im_2 += 1
+
+        else:
+            warnings.warn("The chop position(=HIERARCH ESO DET FRAM TYPE) could not be found"
+                          "from the header(small). Iteration: {}".format(i))
+
+        return None
+
     def open_fit(self, location, image_file):
         """
         Function that opens the fit file at --location + image_file--. It returns the input image
@@ -503,7 +528,31 @@ class VisirBurstModule(ReadingModule):
 
         count_im_1, count_im_2 = 0, 0
 
-        # start_time = timeit.default_timer()
+        start_time = timeit.default_timer()
+
+        # Start Multiprocessing trail
+        # The count_im_1/2 will probably not work. Solve with append?
+        #
+        # cpu = self._m_config_port.get_attribute("CPU")
+        #
+        # for i in range(math.ceil(nimages/cpu)):
+        #     noimages = range(0, nimages)
+        #     images_chunk = noimages[cpu*i:min(cpu*(i+1), nimages)]
+        #
+        #     jobs = []
+        #     for i, fileno in enumerate(images_chunk):
+        #         thread = threading.Thread(target=self.chop_splitting_multiprocessing,
+        #                                   args=(hdulist, chopa, chopb, images, count_im_1,
+        #                                         count_im_2, fileno,))
+        #         jobs.append(thread)
+        #
+        #     for j in jobs:
+        #         j.start()
+        #
+        #     for j in jobs:
+        #         j.join()
+
+        # End multiprocessing trail
 
         for i in range(0, nimages):
             cycle = hdulist[i+1].header['HIERARCH ESO DET FRAM TYPE']
@@ -520,10 +569,10 @@ class VisirBurstModule(ReadingModule):
                 warnings.warn("The chop position(=HIERARCH ESO DET FRAM TYPE) could not be found"
                               "from the header(small). Iteration: {}".format(i))
 
-        # elapsed = timeit.default_timer() - start_time
-        # sys.stdout.write(
-        #     "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
-        # sys.stdout.flush()
+        elapsed = timeit.default_timer() - start_time
+        sys.stdout.write(
+            "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
+        sys.stdout.flush()
 
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
@@ -546,7 +595,7 @@ class VisirBurstModule(ReadingModule):
 
         return chopa, chopb, nod, head, head_small, images.shape
         """
-        hdulist = fits.open(location + image_file)
+        hdulist = fits.open(location + image_file, do_not_scale_image_data=True)
 
         head = hdulist[0].header
         head_small = hdulist[1].header
@@ -563,23 +612,20 @@ class VisirBurstModule(ReadingModule):
             header.update(head_small)
 
         images = hdulist[1].data.byteswap().newbyteorder()
-
+        print(images.nbytes)
         # Put them in different fit/chop files
         chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
-                         dtype=np.float32)
+                         dtype=np.uint32)
         chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
-                         dtype=np.float32)
-        # shareda = sharedmem.empty(chopa.shape)
-        # sharedb = sharedmem.empty(chopb.shape)
+                         dtype=np.uint32)
+        print(chopa.nbytes)
 
         for i in range(nimages):
-            # self.chop_splitting(ndit, images, shareda, sharedb, i)
             self.chop_splitting(ndit, images, chopa, chopb, i)
 
-        # chopa[:, :, :] = shareda[:, :, :]
-        # chopb[:, :, :] = sharedb[:, :, :]
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
+        print(chopa.nbytes)
 
         fits_header = []
         for key in header:
