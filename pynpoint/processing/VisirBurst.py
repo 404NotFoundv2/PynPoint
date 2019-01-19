@@ -494,8 +494,8 @@ class VisirBurstModule(ReadingModule):
             header.append(("NAXIS3", nimages))
 
         # Put them in different fit/chop files
-        chopa = np.zeros((int(nimages/2 + 1), image.shape[0], image.shape[1]))
-        chopb = np.zeros((int(nimages/2 + 1), image.shape[0], image.shape[1]))
+        chopa = np.zeros((int(nimages/2 + 1), image.shape[0], image.shape[1]), dtype=np.float32)
+        chopb = np.zeros((int(nimages/2 + 1), image.shape[0], image.shape[1]), dtype=np.float32)
 
         images = np.zeros((nimages, image.shape[0], image.shape[1]))
         for i in range(1, nimages+1):
@@ -565,8 +565,10 @@ class VisirBurstModule(ReadingModule):
         images = hdulist[1].data.byteswap().newbyteorder()
 
         # Put them in different fit/chop files
-        chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
-        chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]))
+        chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
+                         dtype=np.float32)
+        chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
+                         dtype=np.float32)
         # shareda = sharedmem.empty(chopa.shape)
         # sharedb = sharedmem.empty(chopb.shape)
 
