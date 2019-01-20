@@ -615,10 +615,9 @@ class VisirBurstModule(ReadingModule):
         print(images.nbytes/1000000)
         # Put them in different fit/chop files
         chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
-                         dtype=np.uint32)
+                         dtype=np.int32)
         chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
-                         dtype=np.uint32)
-        print(chopa.nbytes/1000000)
+                         dtype=np.int32)
 
         for i in range(nimages):
             self.chop_splitting(ndit, images, chopa, chopb, i)
@@ -691,8 +690,10 @@ class VisirBurstModule(ReadingModule):
                     chopa_noda = np.append(chopa_noda, chopa, axis=0)
                     chopb_noda = np.append(chopb_noda, chopb, axis=0)
 
-                self.m_image_out_port_1.append(chopa_noda, data_dim=3)
-                self.m_image_out_port_2.append(chopb_noda, data_dim=3)
+                # self.m_image_out_port_1.append(chopa_noda, data_dim=3)
+                # self.m_image_out_port_2.append(chopb_noda, data_dim=3)
+                self.m_image_out_port_1.set_all(chopa_noda, data_dim=3)
+                self.m_image_out_port_2.set_all(chopb_noda, data_dim=3)
 
             if nod == "B":
                 if counterb == 0:
@@ -703,8 +704,10 @@ class VisirBurstModule(ReadingModule):
                     chopa_nodb = np.append(chopa_nodb, chopa, axis=0)
                     chopb_nodb = np.append(chopb_nodb, chopb, axis=0)
 
-                self.m_image_out_port_3.append(chopa_nodb, data_dim=3)
-                self.m_image_out_port_4.append(chopb_nodb, data_dim=3)
+                # self.m_image_out_port_3.append(chopa_nodb, data_dim=3)
+                # self.m_image_out_port_4.append(chopb_nodb, data_dim=3)
+                self.m_image_out_port_3.set_all(chopa_nodb, data_dim=3)
+                self.m_image_out_port_4.set_all(chopb_nodb, data_dim=3)
 
             # Collect header data
             self._static_attributes(files[i], header, i, len(files)-1)
