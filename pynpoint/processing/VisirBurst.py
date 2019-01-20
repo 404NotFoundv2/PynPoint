@@ -612,20 +612,20 @@ class VisirBurstModule(ReadingModule):
             header.update(head_small)
 
         images = hdulist[1].data.byteswap().newbyteorder()
-        print(images.nbytes)
+        print(images.nbytes/1000000)
         # Put them in different fit/chop files
         chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
                          dtype=np.uint32)
         chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
                          dtype=np.uint32)
-        print(chopa.nbytes)
+        print(chopa.nbytes/1000000)
 
         for i in range(nimages):
             self.chop_splitting(ndit, images, chopa, chopb, i)
 
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
-        print(chopa.nbytes)
+        print(chopa.nbytes/1000000)
 
         fits_header = []
         for key in header:
