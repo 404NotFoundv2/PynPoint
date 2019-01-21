@@ -2,7 +2,7 @@
 # @Jasper Jonker
 
 import numpy as np
-import sharedmem
+import logging
 from astropy.io import fits
 import os
 import subprocess
@@ -528,32 +528,6 @@ class VisirBurstModule(ReadingModule):
 
         count_im_1, count_im_2 = 0, 0
 
-        start_time = timeit.default_timer()
-
-        # Start Multiprocessing trail
-        # The count_im_1/2 will probably not work. Solve with append?
-        #
-        # cpu = self._m_config_port.get_attribute("CPU")
-        #
-        # for i in range(math.ceil(nimages/cpu)):
-        #     noimages = range(0, nimages)
-        #     images_chunk = noimages[cpu*i:min(cpu*(i+1), nimages)]
-        #
-        #     jobs = []
-        #     for i, fileno in enumerate(images_chunk):
-        #         thread = threading.Thread(target=self.chop_splitting_multiprocessing,
-        #                                   args=(hdulist, chopa, chopb, images, count_im_1,
-        #                                         count_im_2, fileno,))
-        #         jobs.append(thread)
-        #
-        #     for j in jobs:
-        #         j.start()
-        #
-        #     for j in jobs:
-        #         j.join()
-
-        # End multiprocessing trail
-
         for i in range(0, nimages):
             cycle = hdulist[i+1].header['HIERARCH ESO DET FRAM TYPE']
 
@@ -568,11 +542,6 @@ class VisirBurstModule(ReadingModule):
             else:
                 warnings.warn("The chop position(=HIERARCH ESO DET FRAM TYPE) could not be found"
                               "from the header(small). Iteration: {}".format(i))
-
-        elapsed = timeit.default_timer() - start_time
-        sys.stdout.write(
-            "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
-        sys.stdout.flush()
 
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
@@ -595,7 +564,7 @@ class VisirBurstModule(ReadingModule):
 
         return chopa, chopb, nod, head, head_small, images.shape
         """
-        hdulist = fits.open(location + image_file, do_not_scale_image_data=True)
+        hdulist = fits.open(location + image_file)  # do_not_scale_image_data=True)
 
         head = hdulist[0].header
         head_small = hdulist[1].header
@@ -613,18 +582,50 @@ class VisirBurstModule(ReadingModule):
 
         images = hdulist[1].data.byteswap().newbyteorder()
 
+        # Start Multiprocessing trail
+        #
+        # start_time = timeit.default_timer()
+        # The count_im_1/2 will probably not work. Solve with append?
+        #
+        # cpu = self._m_config_port.get_attribute("CPU")
+        #
+        # for i in range(math.ceil(nimages/cpu)):
+        #     noimages = range(0, nimages)
+        #     images_chunk = noimages[cpu*i:min(cpu*(i+1), nimages)]
+        #
+        #     jobs = []
+        #     for i, fileno in enumerate(images_chunk):
+        #         thread = threading.Thread(target=self.chop_splitting_multiprocessing,
+        #                                   args=(hdulist, chopa, chopb, images, count_im_1,
+        #                                         count_im_2, fileno,))
+        #         jobs.append(thread)
+        #
+        #     for j in jobs:
+        #         j.start()
+        #
+        #     for j in jobs:
+        #         j.join()
+
+        # elapsed = timeit.default_timer() - start_time
+        # sys.stdout.write(
+        #     "\r\t\t\t\t\t\tTime single Fit ---" + str(np.round(elapsed, 2)) + " seconds")
+        # sys.stdout.flush()
+
+        # End multiprocessing trail
+
+
         # Put them in different fit/chop files
         chopa = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
-                         dtype=np.int32)
+                         dtype=np.float32)
         chopb = np.zeros((int(images.shape[0]/2 + ndit), images.shape[1], images.shape[2]),
-                         dtype=np.int32)
+                         dtype=np.float32)
 
         for i in range(nimages):
             self.chop_splitting(ndit, images, chopa, chopb, i)
 
         chopa = chopa[chopa[:, 0, 0] != 0, :, :]
         chopb = chopb[chopb[:, 0, 0] != 0, :, :]
-        print(chopa.nbytes/1000000)
+        logging.info(chopa.nbytes/1000000)
 
         fits_header = []
         for key in header:
