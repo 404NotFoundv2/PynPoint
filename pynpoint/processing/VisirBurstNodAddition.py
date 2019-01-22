@@ -77,13 +77,23 @@ class VisirBurstNodInverterModule(ProcessingModule):
 
         if shape_1 != shape_2:
             warnings.warn("Input image size should be the same. Image shape 1 {}, "
-                          "is not equal to Image size 2 {}".format(shape_1, shape_2))
+                          "is not equal to Image size 2 {}. Reducing to same "
+                          "size".format(shape_1, shape_2))
 
-        data_output = np.zeros(shape_1, np.float32)
+            data_1 = self.m_image_in_port1.get_all()
+            data_2 = self.m_image_in_port2.get_all()
 
-        data_1 = self.m_image_in_port1.get_all()
-        data_2 = self.m_image_in_port2.get_all()
-        data_output[:, :, :] = data_1[:, :, :] + data_2[:, :, :]
+            index = min(shape_1[0], shape_2[0])
+            data_output = np.zeros((index, shape_1[1], shape_1[2]), dtype=np.float32)
+
+            data_output[:, :, :] = data_1[:index, :, :] + data_2[:index, :, :]
+
+        else:
+            data_output = np.zeros(shape_1, np.float32)
+
+            data_1 = self.m_image_in_port1.get_all()
+            data_2 = self.m_image_in_port2.get_all()
+            data_output[:, :, :] = data_1[:, :, :] + data_2[:, :, :]
 
         self.m_image_out_port1.set_all(data_output)
 
