@@ -295,17 +295,25 @@ class VisirBurstModule(ReadingModule):
                                     self.m_image_out_port_1.append_attribute_data(
                                         "PARANG_START", 0.)
                                     self.m_image_out_port_1.append_attribute_data(
+                                        "PARANG", 0.)
+                                    self.m_image_out_port_1.append_attribute_data(
                                         "PARANG_END", 0.)
                                     self.m_image_out_port_2.append_attribute_data(
                                         "PARANG_START", 0.)
+                                    self.m_image_out_port_2.append_attribute_data(
+                                        "PARANG", 0.)
                                     self.m_image_out_port_2.append_attribute_data(
                                         "PARANG_END", 0.)
                                     self.m_image_out_port_3.append_attribute_data(
                                         "PARANG_START", 0.)
+                                    self.m_image_out_port_3.append_attribute_data(
+                                        "PARANG", 0.)
                                     self.m_image_out_port_3.append_attribute_data(
                                         "PARANG_END", 0.)
                                     self.m_image_out_port_4.append_attribute_data(
                                         "PARANG_START", 0.)
+                                    self.m_image_out_port_4.append_attribute_data(
+                                        "PARANG", 0.)
                                     self.m_image_out_port_4.append_attribute_data(
                                         "PARANG_END", 0.)
 

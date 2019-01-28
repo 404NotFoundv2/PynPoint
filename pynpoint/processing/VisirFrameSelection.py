@@ -348,10 +348,9 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
         self.m_image_out_port_2.copy_attributes_from_input_port(self.m_image_in_port)
 
-        self.m_image_out_port.add_attribute("INDEX",
-                                            np.arange(0, (nimages-len(frames_removed)), 1),
+        self.m_image_out_port.add_attribute("INDEX", np.arange(0, (nimages-len(frames_removed)), 1),
                                             static=False)
-        self.m_image_out_port.add_attribute("PARANG", parang, static=False)
+        #self.m_image_out_port.add_attribute("PARANG", parang, static=False)
         print("Number frames removed: ", len(frames_removed))
         non_static = self.m_image_in_port.get_all_non_static_attributes()
 
