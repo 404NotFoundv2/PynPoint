@@ -297,25 +297,25 @@ class VisirBurstModule(ReadingModule):
                                     self.m_image_out_port_1.append_attribute_data(
                                         "PARANG", 0.)
                                     self.m_image_out_port_1.append_attribute_data(
-                                        "PARANG_END", 0.)
+                                        "PARANG_END", 0.0001)
                                     self.m_image_out_port_2.append_attribute_data(
                                         "PARANG_START", 0.)
                                     self.m_image_out_port_2.append_attribute_data(
                                         "PARANG", 0.)
                                     self.m_image_out_port_2.append_attribute_data(
-                                        "PARANG_END", 0.)
+                                        "PARANG_END", 0.0001)
                                     self.m_image_out_port_3.append_attribute_data(
                                         "PARANG_START", 0.)
                                     self.m_image_out_port_3.append_attribute_data(
                                         "PARANG", 0.)
                                     self.m_image_out_port_3.append_attribute_data(
-                                        "PARANG_END", 0.)
+                                        "PARANG_END", 0.0001)
                                     self.m_image_out_port_4.append_attribute_data(
                                         "PARANG_START", 0.)
                                     self.m_image_out_port_4.append_attribute_data(
                                         "PARANG", 0.)
                                     self.m_image_out_port_4.append_attribute_data(
-                                        "PARANG_END", 0.)
+                                        "PARANG_END", 0.0001)
 
                                 elif fitskey == "ESO ADA PUPILPOS":
                                     self.m_image_out_port_1.append_attribute_data(
@@ -723,6 +723,9 @@ class VisirBurstModule(ReadingModule):
 
         sys.stdout.write("\rRunning VISIRInitializationModule...[DONE]\n")
         sys.stdout.flush()
+
+        print("NFRAMES = ", self.m_image_out_port_1.get_attribute("NFRAMES"))
+        print("NDIT = ", self.m_image_out_port_1.get_attribute("NDIT"))
 
         self.m_image_out_port_1.add_history_information("VisirBurstModule", "Nod A, Chop A")
         self.m_image_out_port_2.add_history_information("VisirBurstModule", "Nod A, Chop B")
