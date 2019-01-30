@@ -22,3 +22,7 @@ docs/_build
 
 # Mac
 .DS_Store
+
+# Vim
+.vim
+.tags
