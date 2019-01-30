@@ -1,0 +1,37 @@
+!_TAG_FILE_SORTED	2	/0=unsorted, 1=sorted, 2=foldcase/
+chop_splitting	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def chop_splitting(self, ndit, images, chopa, chopb, i):$/;"	m	language:Python	class:VisirBurstModule
+chop_splitting_multiprocessing	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def chop_splitting_multiprocessing(self, hdulist, chopa, chopb, images, i,):$/;"	m	language:Python	class:VisirBurstModule
+FieldStabilizedAngleInterpolationModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^class FieldStabilizedAngleInterpolationModule(ProcessingModule):$/;"	c	language:Python
+fits	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^from astropy.io import fits$/;"	i	language:Python
+get_attributes	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^from pynpoint.core.attributes import get_attributes$/;"	i	language:Python
+math	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^import math$/;"	i	language:Python
+np	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^import numpy as np$/;"	i	language:Python
+open_fit	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def open_fit(self, location, image_file):$/;"	m	language:Python	class:VisirBurstModule
+open_fit_burst	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def open_fit_burst(self, location, image_file):$/;"	m	language:Python	class:VisirBurstModule
+os	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^import os$/;"	i	language:Python
+ProcessingModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^from pynpoint.core.processing import ReadingModule, ProcessingModule$/;"	i	language:Python
+progress	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^from pynpoint.util.module import progress$/;"	i	language:Python
+ReadingModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^from pynpoint.core.processing import ReadingModule, ProcessingModule$/;"	i	language:Python
+rotate	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^from scipy.ndimage import rotate$/;"	i	language:Python
+rotation	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def rotation(self, data):$/;"	m	language:Python	class:VisirNodAdditionrModule
+run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def run(self):$/;"	m	language:Python	class:FieldStabilizedAngleInterpolationModule
+run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def run(self):$/;"	m	language:Python	class:VisirBurstModule
+run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def run(self):$/;"	m	language:Python	class:VisirNodAdditionrModule
+six	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^import six$/;"	i	language:Python
+subprocess	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^import subprocess$/;"	i	language:Python
+sys	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^import sys$/;"	i	language:Python
+threading	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^import threading$/;"	i	language:Python
+timeit	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^import timeit$/;"	i	language:Python
+uncompress	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def uncompress(self):$/;"	m	language:Python	class:VisirBurstModule
+VisirBurstModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^class VisirBurstModule(ReadingModule):$/;"	c	language:Python
+VisirNodAdditionrModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^class VisirNodAdditionrModule(ProcessingModule):$/;"	c	language:Python
+warnings	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^import warnings$/;"	i	language:Python
+_extra_attributes	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def _extra_attributes(self, fits_file, location, shape, nod):$/;"	m	language:Python	class:VisirBurstModule
+_initialize	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def _initialize(self):$/;"	m	language:Python	class:VisirBurstModule
+_initialize	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def _initialize(self):$/;"	m	language:Python	class:VisirNodAdditionrModule
+_non_static_attributes	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def _non_static_attributes(self, header):$/;"	m	language:Python	class:VisirBurstModule
+_static_attributes	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def _static_attributes(self, fits_file, header, iteration, end):$/;"	m	language:Python	class:VisirBurstModule
+_uncompress_multi	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def _uncompress_multi(self, filename):$/;"	m	language:Python	class:VisirBurstModule
+__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def __init__(self,$/;"	m	language:Python	class:FieldStabilizedAngleInterpolationModule
+__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def __init__(self,$/;"	m	language:Python	class:VisirBurstModule
+__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/VisirBurst.py	/^    def __init__(self,$/;"	m	language:Python	class:VisirNodAdditionrModule

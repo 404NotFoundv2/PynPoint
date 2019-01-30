@@ -198,17 +198,20 @@ class AngleInterpolationModule(ProcessingModule):
         :return: None
         """
 
-        parang_start = self.m_data_in_port.get_attribute("PARANG_START")
-        parang_end = self.m_data_in_port.get_attribute("PARANG_END")
+        # parang_start = self.m_data_in_port.get_attribute("PARANG_START")
+        # parang_end = self.m_data_in_port.get_attribute("PARANG_END")
 
         steps = self.m_data_in_port.get_attribute("NFRAMES")
-        ndit = self.m_data_in_port.get_attribute("NDIT")
+        ndit = steps  #self.m_data_in_port.get_attribute("NDIT")
+
+        parang_start = [0.]*len(steps)
+        parang_end = [1e-5]*len(steps)
 
         if not np.all(ndit == steps):
-            warnings.warn("There is a mismatch between the NDIT and NFRAMES values. The "
-                          "derotation angles are calculated with a linear interpolation by using "
-                          "NFRAMES steps. A frame selection should be applied after the "
-                          "derotation angles are calculated.")
+            warnings.warn("There is a mismatch between the NDIT ({1}) and NFRAMES ({2}) values. "
+                          "The derotation angles are calculated with a linear interpolation by "
+                          "using {2} (NFRAMES) steps. A frame selection should be applied after "
+                          "the derotation angles are calculated.".format(ndit, steps))
 
         new_angles = []
 

@@ -1,4 +1,3 @@
-# This tool combines the burst data made every Chop
 # @Jasper Jonker
 
 import numpy as np
@@ -10,10 +9,11 @@ import timeit
 import sys
 import six
 import warnings
-from pynpoint.core.processing import ReadingModule
+from pynpoint.core.processing import ReadingModule, ProcessingModule
 from pynpoint.util.module import progress
 from pynpoint.core.attributes import get_attributes
 import threading
+from scipy.ndimage import rotate
 
 
 class VisirBurstModule(ReadingModule):
@@ -29,7 +29,7 @@ class VisirBurstModule(ReadingModule):
                  check=True,
                  overwrite=True,
                  multithread=False):
-        '''
+        """
         Constructor of the VisirBurtModule
         :param name_in: Unique name of the instance
         :type name_in: str
@@ -58,7 +58,7 @@ class VisirBurstModule(ReadingModule):
         :type multithread: bool
 
         return None
-        '''
+        """
 
         super(VisirBurstModule, self).__init__(name_in)
 
@@ -724,9 +724,6 @@ class VisirBurstModule(ReadingModule):
         sys.stdout.write("\rRunning VISIRInitializationModule...[DONE]\n")
         sys.stdout.flush()
 
-        print("NFRAMES = ", self.m_image_out_port_1.get_attribute("NFRAMES"))
-        print("NDIT = ", self.m_image_out_port_1.get_attribute("NDIT"))
-
         self.m_image_out_port_1.add_history_information("VisirBurstModule", "Nod A, Chop A")
         self.m_image_out_port_2.add_history_information("VisirBurstModule", "Nod A, Chop B")
         self.m_image_out_port_3.add_history_information("VisirBurstModule", "Nod B, Chop A")
@@ -735,3 +732,200 @@ class VisirBurstModule(ReadingModule):
         self.m_image_out_port_2.close_port()
         self.m_image_out_port_3.close_port()
         self.m_image_out_port_4.close_port()
+
+
+class FieldStabilizedAngleInterpolationModule(ProcessingModule):
+    """
+    Module for calculating the parallactic angle values by interpolating between the begin and end
+    value of a data cube. This is used for data taken in FieldStabilized mode, giving the datacubes
+    a very small rotation.
+
+    Used and tested in Fieldstabilized Burst mode
+    """
+
+    def __init__(self,
+                 name_in="angle_interpolation",
+                 data_tag="im_arr"):
+        """
+        Constructor of AngleInterpolationModule.
+
+        :param name_in: Unique name of the module instance.
+        :type name_in: str
+        :param data_tag: Tag of the database entry for which the parallactic angles are written as
+                         attributes.
+        :type data_tag: str
+
+        :return: None
+        """
+
+        super(FieldStabilizedAngleInterpolationModule, self).__init__(name_in)
+
+        self.m_data_in_port = self.add_input_port(data_tag)
+        self.m_data_out_port = self.add_output_port(data_tag)
+
+    def run(self):
+        """
+        Run method of the module. Calculates the parallactic angles of each frame by linearly
+        interpolating between the start and end values of the data cubes. The values are written
+        as attributes to *data_tag*. A correction of 360 deg is applied when the start and end
+        values of the angles change sign at +/-180 deg.
+
+        :return: None
+        """
+
+        steps = self.m_data_in_port.get_attribute("NFRAMES")
+
+        parang_start = [0.]*len(steps)
+        parang_end = [1e-5]*len(steps)
+
+        new_angles = []
+
+        for i, _ in enumerate(parang_start):
+            progress(i, len(parang_start), "Running FieldStabilizedAngleInterpolationModule...")
+
+            if parang_start[i] < -170. and parang_end[i] > 170.:
+                parang_start[i] += 360.
+
+            elif parang_end[i] < -170. and parang_start[i] > 170.:
+                parang_end[i] += 360.
+
+            new_angles = np.append(new_angles,
+                                   np.linspace(parang_start[i],
+                                               parang_end[i],
+                                               num=steps[i]))
+
+        sys.stdout.write("Running FieldStabilizedAngleInterpolationModule... [DONE]\n")
+        sys.stdout.flush()
+
+        self.m_data_out_port.add_attribute("PARANG", new_angles, static=False)
+
+
+class VisirNodAdditionrModule(ProcessingModule):
+    """
+    Module that adds the two Nod postitions for Parallel nodding. The input expects an parallactic
+    angle for each frame, requiring the FieldStabilizedAngleInterpolationModule or the
+    AngleInterpolationModule to be ranned before.
+    """
+
+    def __init__(self,
+                 name_in="NodAddition",
+                 image_in_tag_1="image_in_1",
+                 image_in_tag_2="image_in_2",
+                 image_out_tag="image_out",
+                 pupilstabilized=True):
+        """
+        Constructor of the VisirNodAdditionModule
+        :param name_in: Unique name of the instance
+        :type name_in: str
+        :param image_in_tag_1: Entry of the database used as input of the module, considerd Nod A
+        :type image_in_tag: str
+        :param image_in_tag_2: Entry of the database used as input of the module, considerd Nod B
+        :type image_in_tag: str
+        :param image_out_tag: Entry written as output
+        :type image_out_tag: str
+        :param burst: True if data is taken in Burst, False if data is taken in normal mode.
+        :type burst: bool
+
+        :return: None
+        """
+
+        super(VisirNodAdditionrModule, self).__init__(name_in)
+
+        # Parameters
+        self.m_pupil = pupilstabilized
+
+        # Ports
+        self.m_image_in_port1 = self.add_input_port(image_in_tag_1)
+        self.m_image_in_port2 = self.add_input_port(image_in_tag_2)
+        self.m_image_out_port = self.add_output_port(image_out_tag)
+
+    def _initialize(self):
+        """
+        Function that clears the __init__ tags if they are not
+        empty given incorrect input
+        """
+
+        if not isinstance(self.m_pupil, bool):
+            raise ValueError("Parameter --pupilstabilized-- should be set to True or False")
+
+        if self.m_image_in_port1.tag == self.m_image_out_port1.tag or \
+                self.m_image_in_port2.tag == self.m_image_out_port1.tag:
+            raise ValueError("Input and output tags should be different")
+
+        if self.m_image_out_port1 is not None:
+            self.m_image_out_port1.del_all_data()
+            self.m_image_out_port1.del_all_attributes()
+
+    def rotation(self, data):
+        """
+        Function that rotates the second block of images to the same angle as the first block (nod).
+
+        Returns the dataset rotated given by the posangle in the central database
+        """
+
+        posang_1 = self.m_image_in_port1.get_attribute("PARANG")
+        posang_2 = self.m_image_in_port2.get_attribute("PARANG")
+
+        if len(posang_1) != len(data[:, 0, 0]):
+            raise ValueError("The number of images: {} is not equal to the number of angles: {}"
+                             "Did you run AngleInterpolation before?".format(len(data[:, 0, 0]),
+                                                                             len(posang_1)))
+
+        if len(posang_1) != len(posang_2):
+            raise UserWarning("Attribute --PARANG-- in the central database has a different size "
+                              "for the two input cubes. Image_in_tag_1 --PARANG-- size: {1}, "
+                              "Image_in_tag_2 --PARANG-- size: {2}. Reducing to size {3}"
+                              "".format(len(posang_1),
+                                        len(posang_2),
+                                        min(len(posang_1), len(posang_2))))
+
+        data_out = np.zeros(data.shape)
+
+        for i in range(len(posang_1)):
+            data_out[i, :, :] = rotate(input=data,
+                                       angle=posang_1[i]-posang_2[i],
+                                       reshape=False)
+
+        return data_out
+
+    def run(self):
+        sys.stdout.write("Running VISIRNodAdditionModule...")
+        sys.stdout.flush()
+
+        self._initialize()
+
+        shape_1 = self.m_image_in_port1.get_shape()
+        shape_2 = self.m_image_in_port2.get_shape()
+
+        if shape_1 != shape_2:
+            warnings.warn("Input image size should be the same. Image shape 1 {}, "
+                          "is not equal to Image size 2 {}. Reducing to same "
+                          "size".format(shape_1, shape_2))
+
+        data_1 = self.m_image_in_port1.get_all()
+        data_2 = self.m_image_in_port2.get_all()
+
+        index = min(shape_1[0], shape_2[0])
+        data_output = np.zeros((index, shape_1[1], shape_1[2]), dtype=np.float32)
+
+        # Rotate second image set
+        if self.m_pupil is True:
+            data_2 = self.rotation(data_2)
+
+        else:
+            pass
+
+        data_output[:, :, :] = data_1[:index, :, :] + data_2[:index, :, :]
+
+        self.m_image_out_port.set_all(data_output)
+
+        self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port1)
+        self.m_image_out_port.add_history_information("VisirNodInverterModule", "Combined Nod")
+
+        new_angles = self.m_image_in_port1.get_attribute("PARANG")
+        self.m_data_out_port.add_attribute("PARANG", new_angles, static=False)
+
+        sys.stdout.write("\rRunning VISIRNodAdditionModule... [DONE]\n")
+        sys.stdout.flush()
+
+        self.m_image_out_port.close_port()
