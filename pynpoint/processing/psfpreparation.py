@@ -198,14 +198,19 @@ class AngleInterpolationModule(ProcessingModule):
         :return: None
         """
 
-        # parang_start = self.m_data_in_port.get_attribute("PARANG_START")
-        # parang_end = self.m_data_in_port.get_attribute("PARANG_END")
+        parang_start = self.m_data_in_port.get_attribute("PARANG_START")
+        parang_end = self.m_data_in_port.get_attribute("PARANG_END")
 
         steps = self.m_data_in_port.get_attribute("NFRAMES")
-        ndit = steps  #self.m_data_in_port.get_attribute("NDIT")
+        ndit = self.m_data_in_port.get_attribute("NDIT")
+
+        """
+        steps = self.m_data_in_port.get_attribute("NFRAMES")
+        ndit = steps
 
         parang_start = [0.]*len(steps)
         parang_end = [1e-5]*len(steps)
+        """
 
         if not np.all(ndit == steps):
             warnings.warn("There is a mismatch between the NDIT ({1}) and NFRAMES ({2}) values. "

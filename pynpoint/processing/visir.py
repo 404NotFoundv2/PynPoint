@@ -848,13 +848,13 @@ class VisirNodAdditionModule(ProcessingModule):
         if not isinstance(self.m_pupil, bool):
             raise ValueError("Parameter --pupilstabilized-- should be set to True or False")
 
-        if self.m_image_in_port1.tag == self.m_image_out_port1.tag or \
-                self.m_image_in_port2.tag == self.m_image_out_port1.tag:
+        if self.m_image_in_port1.tag == self.m_image_out_port.tag or \
+                self.m_image_in_port2.tag == self.m_image_out_port.tag:
             raise ValueError("Input and output tags should be different")
 
-        if self.m_image_out_port1 is not None:
-            self.m_image_out_port1.del_all_data()
-            self.m_image_out_port1.del_all_attributes()
+        if self.m_image_out_port is not None:
+            self.m_image_out_port.del_all_data()
+            self.m_image_out_port.del_all_attributes()
 
     def rotation(self, data):
         """
@@ -865,6 +865,10 @@ class VisirNodAdditionModule(ProcessingModule):
 
         posang_1 = self.m_image_in_port1.get_attribute("PARANG")
         posang_2 = self.m_image_in_port2.get_attribute("PARANG")
+
+        if posang_1 is None or posang_2 is None:
+            raise ValueError("Attribute --PARANG-- not found in database. "
+                             "Did you run AngleInterpolationModule before?")
 
         if len(posang_1) != len(data[:, 0, 0]):
             raise ValueError("The number of images: {} is not equal to the number of angles: {}"
@@ -920,7 +924,7 @@ class VisirNodAdditionModule(ProcessingModule):
         self.m_image_out_port.set_all(data_output)
 
         self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port1)
-        self.m_image_out_port.add_history_information("VisirNodInverterModule", "Combined Nod")
+        self.m_image_out_port.add_history_information("VisirNodAdditionModule", "Combined Nod")
 
         new_angles = self.m_image_in_port1.get_attribute("PARANG")
         self.m_data_out_port.add_attribute("PARANG", new_angles, static=False)
