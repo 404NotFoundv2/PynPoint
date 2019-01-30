@@ -1,73 +1,15 @@
 !_TAG_FILE_SORTED	2	/0=unsorted, 1=sorted, 2=foldcase/
-absolute_import	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from __future__ import absolute_import$/;"	i	language:Python
-AngleCalculationModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^class AngleCalculationModule(ProcessingModule):$/;"	c	language:Python
-AngleInterpolationModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^class AngleInterpolationModule(ProcessingModule):$/;"	c	language:Python
-chop_splitting	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def chop_splitting(self, ndit, images, chopa, chopb, i):$/;"	m	language:Python	class:VisirInitializationModule
-chop_splitting_multiprocessing	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def chop_splitting_multiprocessing(self, hdulist, chopa, chopb, images, i,):$/;"	m	language:Python	class:VisirInitializationModule
-create_mask	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from pynpoint.util.image import create_mask, scale_image, shift_image$/;"	i	language:Python
-division	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from __future__ import division$/;"	i	language:Python
-ephem	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^import ephem$/;"	i	language:Python
-FieldStabilizedAngleInterpolationModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^class FieldStabilizedAngleInterpolationModule(ProcessingModule):$/;"	c	language:Python
-fits	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from astropy.io import fits$/;"	i	language:Python
-get_attributes	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from pynpoint.core.attributes import get_attributes$/;"	i	language:Python
-locate_star	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from pynpoint.util.module import progress, locate_star$/;"	i	language:Python
-mask	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def mask(self, i):$/;"	m	language:Python	class:VisirFrameSelectionModule
-math	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import math$/;"	i	language:Python
-memory_frames	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from pynpoint.util.module import progress, memory_frames, number_images_port$/;"	i	language:Python
-ndimage	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from scipy import ndimage$/;"	i	language:Python
-np	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^import numpy as np$/;"	i	language:Python
-np	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import numpy as np$/;"	i	language:Python
-number_images_port	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from pynpoint.util.module import progress, memory_frames, number_images_port$/;"	i	language:Python
-open_fit	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def open_fit(self, location, image_file):$/;"	m	language:Python	class:VisirInitializationModule
-open_fit_burst	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def open_fit_burst(self, location, image_file):$/;"	m	language:Python	class:VisirInitializationModule
-os	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import os$/;"	i	language:Python
-ProcessingModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from pynpoint.core.processing import ProcessingModule$/;"	i	language:Python
-ProcessingModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from pynpoint.core.processing import ReadingModule, ProcessingModule$/;"	i	language:Python
-progress	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from pynpoint.util.module import progress, memory_frames, number_images_port$/;"	i	language:Python
-progress	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from pynpoint.util.module import progress, locate_star$/;"	i	language:Python
-PSFpreparationModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^class PSFpreparationModule(ProcessingModule):$/;"	c	language:Python
-range	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from six.moves import range$/;"	i	language:Python
-ReadingModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from pynpoint.core.processing import ReadingModule, ProcessingModule$/;"	i	language:Python
-rotate	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from scipy.ndimage import rotate$/;"	i	language:Python
-rotation	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def rotation(self, data):$/;"	m	language:Python	class:VisirNodAdditionModule
-run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def run(self):$/;"	m	language:Python	class:AngleCalculationModule
-run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def run(self):$/;"	m	language:Python	class:AngleInterpolationModule
-run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def run(self):$/;"	m	language:Python	class:PSFpreparationModule
-run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def run(self):$/;"	m	language:Python	class:SDIpreparationModule
-run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def run(self):$/;"	m	language:Python	class:SortParangModule
-run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def run(self):$/;"	m	language:Python	class:FieldStabilizedAngleInterpolationModule
-run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def run(self):$/;"	m	language:Python	class:VisirFrameSelectionModule
-run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def run(self):$/;"	m	language:Python	class:VisirInitializationModule
-run	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def run(self):$/;"	m	language:Python	class:VisirNodAdditionModule
-scale_image	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from pynpoint.util.image import create_mask, scale_image, shift_image$/;"	i	language:Python
-SDIpreparationModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^class SDIpreparationModule(ProcessingModule):$/;"	c	language:Python
-shift_image	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from pynpoint.util.image import create_mask, scale_image, shift_image$/;"	i	language:Python
-six	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import six$/;"	i	language:Python
-SortParangModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^class SortParangModule(ProcessingModule):$/;"	c	language:Python
-subprocess	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import subprocess$/;"	i	language:Python
-sys	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^import sys$/;"	i	language:Python
-sys	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import sys$/;"	i	language:Python
-threading	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import threading$/;"	i	language:Python
-timeit	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import timeit$/;"	i	language:Python
-uncompress	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def uncompress(self):$/;"	m	language:Python	class:VisirInitializationModule
-VisirFrameSelectionModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^class VisirFrameSelectionModule(ProcessingModule):$/;"	c	language:Python
-VisirInitializationModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^class VisirInitializationModule(ReadingModule):$/;"	c	language:Python
-VisirNodAdditionModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^class VisirNodAdditionModule(ProcessingModule):$/;"	c	language:Python
-warnings	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^import warnings$/;"	i	language:Python
-warnings	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import warnings$/;"	i	language:Python
-_extra_attributes	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def _extra_attributes(self, fits_file, location, shape, nod):$/;"	m	language:Python	class:VisirInitializationModule
-_initialize	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def _initialize(self):$/;"	m	language:Python	class:VisirFrameSelectionModule
-_initialize	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def _initialize(self):$/;"	m	language:Python	class:VisirInitializationModule
-_initialize	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def _initialize(self):$/;"	m	language:Python	class:VisirNodAdditionModule
-_non_static_attributes	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def _non_static_attributes(self, header):$/;"	m	language:Python	class:VisirInitializationModule
-_static_attributes	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def _static_attributes(self, fits_file, header, iteration, end):$/;"	m	language:Python	class:VisirInitializationModule
-_uncompress_multi	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def _uncompress_multi(self, filename):$/;"	m	language:Python	class:VisirInitializationModule
-__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def __init__(self,$/;"	m	language:Python	class:AngleCalculationModule
-__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def __init__(self,$/;"	m	language:Python	class:AngleInterpolationModule
-__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def __init__(self,$/;"	m	language:Python	class:PSFpreparationModule
-__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def __init__(self,$/;"	m	language:Python	class:SDIpreparationModule
-__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^    def __init__(self,$/;"	m	language:Python	class:SortParangModule
-__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def __init__(self,$/;"	m	language:Python	class:FieldStabilizedAngleInterpolationModule
-__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def __init__(self,$/;"	m	language:Python	class:VisirFrameSelectionModule
-__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def __init__(self,$/;"	m	language:Python	class:VisirInitializationModule
-__init__	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def __init__(self,$/;"	m	language:Python	class:VisirNodAdditionModule
+absolute_import	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^from __future__ import absolute_import$/;"	i	language:Python
+ContrastCurveModule	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^class ContrastCurveModule(ProcessingModule):$/;"	c	language:Python
+contrast_limit	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^from pynpoint.util.limits import contrast_limit$/;"	i	language:Python
+ctypes	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^import ctypes$/;"	i	language:Python
+functools	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^import functools$/;"	i	language:Python
+mp	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^import mp.sharedctypes$/;"	i	language:Python
+mp	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^import multiprocessing as mp$/;"	i	language:Python
+np	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^import numpy as np$/;"	i	language:Python
+ProcessingModule	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^from pynpoint.core.processing import ProcessingModule$/;"	i	language:Python
+run	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^    def run(self):$/;"	m	language:Python	class:ContrastCurveModule
+sharedctypes	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^import mp.sharedctypes$/;"	i	language:Python
+sys	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^import sys$/;"	i	language:Python
+warnings	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^import warnings$/;"	i	language:Python
+__init__	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^    def __init__(self,$/;"	m	language:Python	class:ContrastCurveModule

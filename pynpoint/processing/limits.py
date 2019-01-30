@@ -4,18 +4,23 @@ Modules for determining detection limits.
 
 from __future__ import absolute_import
 
-import sys, os
+import sys
+# import os
 import functools
 import warnings
-import multiprocessing
-import sharedmem
+import multiprocessing as mp
+# import sharedmem
 
 import numpy as np
 
 from pynpoint.core.processing import ProcessingModule
 from pynpoint.util.limits import contrast_limit
 
-#os.system('taskset -p 0x48 %d' % os.getpid())
+# Trail: Sharedmemory
+import mp.sharedctypes
+import ctypes
+
+# os.system('taskset -p 0x48 %d' % os.getpid())
 
 
 class ContrastCurveModule(ProcessingModule):
@@ -217,22 +222,27 @@ class ContrastCurveModule(ProcessingModule):
             for ang in pos_t:
                 positions.append((sep, ang))
 
-        print("Size of images array: ", np.round(images.nbytes/(1e9),2), "GB")
+        print("Size of images array: ", np.round(images.nbytes/(1e9), 2), "GB")
 
-        image = sharedmem.empty(images.shape)
-        image[:,:,:] = images[:,:,:]
+        # Sharedmemory which doesnt work
+        # image = sharedmem.empty(images.shape)
+        # image[:,:,:] = images[:,:,:]
 
-        pool = multiprocessing.Pool(processes=cpu)
+        shared_mem_chunck = mp.sharedctypes.RawArray(ctypes.c_float, images.size)
+        images_shared = np.frombuffer(shared_mem_chunck, np.float32).reshape(images.shape)
+        images_shared = images[:, :, :]
 
-        func = functools.partial(contrast_limit, image, psf, parang, self.m_psf_scaling, \
-                                 self.m_extra_rot, self.m_magnitude, self.m_pca_number, \
-                                 self.m_threshold, self.m_accuracy, self.m_aperture, \
+        pool = mp.Pool(processes=cpu)
+
+        func = functools.partial(contrast_limit, images_shared, psf, parang, self.m_psf_scaling,
+                                 self.m_extra_rot, self.m_magnitude, self.m_pca_number,
+                                 self.m_threshold, self.m_accuracy, self.m_aperture,
                                  self.m_ignore, self.m_cent_size, self.m_edge_size, pixscale)
 
         result = pool.map(func, positions)
 
-        pool.close()
-        pool.join()
+        # pool.close()
+        # pool.join()
 
         result = np.asarray(result)
 
