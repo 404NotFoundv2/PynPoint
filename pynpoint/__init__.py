@@ -78,13 +78,14 @@ from pynpoint.readwrite.textwriting import AttributeWritingModule, \
 
 from pynpoint.readwrite.textreading import ParangReadingModule
 
+from pynpoint.processing.visir import VisirInitializationModule \
+                                      FieldStabilizedAngleInterpolationModule \
+                                      VisirNodAdditionModule
 from pynpoint.processing.VisirFrameSelection import VisirFrameSelectionModule
 #from pynpoint.processing.VisirInitialization import VisirInitializationModule
 from pynpoint.processing.VisirInverter import VisirInverterModule
 from pynpoint.processing.VisirNodSubtraction import VisirNodSubtractionModule
-from pynpoint.processing.VisirBurst import VisirBurstModule
 from pynpoint.processing.VisirBurstNodAddition import VisirBurstNodInverterModule
-#from pynpoint.processing.VisirBurstMultiProcessing import VisirBurstModule_
 
 warnings.simplefilter('always', DeprecationWarning)
 

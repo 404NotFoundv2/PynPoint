@@ -10,13 +10,13 @@ import sys
 import six
 import warnings
 from pynpoint.core.processing import ReadingModule, ProcessingModule
-from pynpoint.util.module import progress
+from pynpoint.util.module import progress, locate_star
 from pynpoint.core.attributes import get_attributes
 import threading
 from scipy.ndimage import rotate
 
 
-class VisirBurstModule(ReadingModule):
+class VisirInitializationModule(ReadingModule):
     def __init__(self,
                  name_in="burst",
                  image_in_dir="im_in",
@@ -60,7 +60,7 @@ class VisirBurstModule(ReadingModule):
         return None
         """
 
-        super(VisirBurstModule, self).__init__(name_in)
+        super(VisirInitializationModule, self).__init__(name_in)
 
         # Port
         self.m_image_out_port_1 = self.add_output_port(image_out_tag_1)
@@ -800,7 +800,7 @@ class FieldStabilizedAngleInterpolationModule(ProcessingModule):
         self.m_data_out_port.add_attribute("PARANG", new_angles, static=False)
 
 
-class VisirNodAdditionrModule(ProcessingModule):
+class VisirNodAdditionModule(ProcessingModule):
     """
     Module that adds the two Nod postitions for Parallel nodding. The input expects an parallactic
     angle for each frame, requiring the FieldStabilizedAngleInterpolationModule or the
@@ -829,7 +829,7 @@ class VisirNodAdditionrModule(ProcessingModule):
         :return: None
         """
 
-        super(VisirNodAdditionrModule, self).__init__(name_in)
+        super(VisirNodAdditionModule, self).__init__(name_in)
 
         # Parameters
         self.m_pupil = pupilstabilized
@@ -929,3 +929,170 @@ class VisirNodAdditionrModule(ProcessingModule):
         sys.stdout.flush()
 
         self.m_image_out_port.close_port()
+
+
+class VisirFrameSelectionModule(ProcessingModule):
+    """
+    This is a tool that checks the surroundings of the star on high background
+    flux and will remove these corresponding frames
+    """
+
+    def __init__(self,
+                 name_in="frame_selection",
+                 image_in_tag="image_in",
+                 image_out_tag="image_out",
+                 image_removed="image_rem",
+                 std_out="std_out_text",
+                 method="median",
+                 aperture="3.",
+                 fwhm="0.3",
+                 num_ref=100,
+                 sigma=5.):
+        """
+        Constructor of the VisirFrameSelectionModule
+        :param name_in: Unique name of the instance
+        :type name_in: str
+        :param image_in_tag: Engry of the database used as input of the module
+        :type image_in_tag: str
+        :param image_out_tag: Entry written as output
+        :type image_out_tag: str
+        :param image_removed: Entry of the removed images written as output
+        :type image_removed: str
+        :param std_out: Tag that writes the mean/median (depending on the
+        method) and in the second column the standard deviation for every frame.
+        :type std_out: str
+        :param method: Set to "median" or "mean" that is used as reference to
+            the sigma clipping
+        :type method: str
+        :param aperture: Diameter in arcsec used to mask the star, usually
+            taken to be a few times the fwhm of the psf
+        :type aperture: float
+        :param fwhm: fwhm of the star
+        :type fwhm: float
+        :param num_ref: Number of references used in calculating the mean of
+            the background. If this is set to None, all images are used (up to
+            where the memory in the configuration file allows)
+        :type num_ref: int
+        :param sigma: The standard deviation setting the limit which images are
+            kept
+        :type sigma: float
+
+        :return: None
+        """
+
+        super(VisirFrameSelectionModule, self).__init__(name_in)
+
+        # Port
+        self.m_image_in_port = self.add_input_port(image_in_tag)
+        self.m_image_out_port = self.add_output_port(image_out_tag)
+        self.m_image_out_port_rem = self.add_output_port(image_removed)
+        self.m_image_out_port_std = self.add_output_port(std_out)
+
+        # Parameters
+        self.m_method = method
+        self.m_aperture = aperture
+        self.m_fwhm = fwhm
+        self.m_num_ref = num_ref
+        self.m_sigma = sigma
+
+    def _initialize(self):
+        if self.m_image_in_port.tag == self.m_image_out_port.tag or \
+           self.m_image_in_port.tag == self.m_image_out_port_rem.tag or \
+           self.m_image_in_port.tag == self.m_image_out_port_std.tag:
+            raise ValueError("Input and output ports should have a different tag.")
+
+        if self.m_method != "median" and self.m_method != "mean":
+            raise ValueError("The parameter method should be set to "
+                             "'median' or 'mean'")
+
+        if not isinstance(self.m_aperture, float):
+            raise ValueError("The parameter aperture should be a float")
+
+        if not isinstance(self.m_fwhm, float):
+            raise ValueError("The parameter fwhm should be a float")
+
+        if not isinstance(self.m_num_ref, int) and self.m_num_ref is not None:
+            raise ValueError("The parameter num_ref should be an integer")
+
+        if not isinstance(self.m_sigma, float):
+            raise ValueError("The parameter sigma should be a float")
+
+        if self.m_image_out_port is not None:
+            self.m_image_out_port.del_all_data()
+            self.m_image_out_port.del_all_attributes()
+
+        if self.m_image_out_port_rem is not None:
+            self.m_image_out_port_rem.del_all_data()
+            self.m_image_out_port_rem.del_all_attributes()
+
+        if self.m_image_out_port_std is not None:
+            self.m_image_out_port_std.del_all_data()
+            self.m_image_out_port_std.del_all_attributes()
+
+    def mask(self, i):
+        """
+        Mask the input images with a diameter of fwhm and return
+        """
+
+        image = self.m_image_in_port.__getitem__(i)
+
+        pixscale = self.m_image_in_port.get_attribute("PIXSCALE")
+
+        starpos = np.zeros((2), dtype=np.int64)
+        fwhm_starps = int(math.ceil(float(self.m_fwhm) / pixscale))
+
+        starpos[:] = locate_star(image=image,
+                                 center=None,
+                                 width=None,
+                                 fwhm=fwhm_starps)
+
+        radius = int(round(self.m_aperture/2.))
+        image_masked = image.copy()
+
+        # Inside every frame mask the pixels around the starpos
+        for j in range(radius):
+            for jj in range(radius):
+                if int(round(math.sqrt((j**2 + jj**2)))) <= radius:
+                        image_masked[starpos[0] + j,
+                                     starpos[1] + jj] = 0
+                        image_masked[starpos[0] - j,
+                                     starpos[1] - jj] = 0
+                        image_masked[starpos[0] - j,
+                                     starpos[1] + jj] = 0
+                        image_masked[starpos[0] + j,
+                                     starpos[1] - jj] = 0
+
+        return image_masked
+
+    def run(self):
+        """
+        nframes = self.m_image_in_port.get_attribute("NFRAMES")
+        indexx = self.m_image_in_port.get_attribute("INDEX")
+        parang = self.m_image_in_port.get_attribute("PARANG_START") #PARANG_START?
+        im_shape = self.m_image_in_port.get_shape()
+        nimages = im_shape[0]
+        """
+
+        self._initialize()
+
+        image_shape = self.m_image_in_port.get_shape()
+
+        masked_image = np.zeros(image_shape, dtype=np.float32)
+
+        # for i in range(images.shape[0]):
+        #     t = threading.Tread(target=self.mask, args=(i,))
+
+        masked_image[0, :, :] = self.mask(1)
+        print(masked_image)
+
+        history = "Number of frames removed ="+""
+
+        self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
+        self.m_image_out_port_rem.copy_attributes_from_input_port(self.m_image_in_port)
+        self.m_image_out_port_std.copy_attributes_from_input_port(self.m_image_in_port)
+
+        self.m_image_out_port.add_history_information("FrameSelectionModule", history)
+
+        self.m_image_out_port.close_port()
+        self.m_image_out_port_rem.close_port()
+        self.m_image_out_port_std.close_port()

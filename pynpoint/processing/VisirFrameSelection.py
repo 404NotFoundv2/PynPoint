@@ -11,6 +11,11 @@ import warnings
 
 
 class VisirFrameSelectionModule(ProcessingModule):
+    """
+    This is a tool that checks the surroundings of the star on high background
+    flux and will remove these corresponding frames
+    """
+
     def __init__(self,
                  name_in="frame_selection",
                  image_in_tag="image_in",
