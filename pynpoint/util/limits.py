@@ -29,7 +29,8 @@ def contrast_limit(images,
                    cent_size,
                    edge_size,
                    pixscale,
-                   position):
+                   position,
+                   queue):
 
     """
     Function for calculating the contrast limit at a specified position by iterating towards
@@ -196,5 +197,8 @@ def contrast_limit(images,
 
     sys.stdout.write('.')
     sys.stdout.flush()
+
+    # result = (position[0], position[1], fake_mag, fpf_threshold)
+    # queue.put(result)
 
     return position[0], position[1], fake_mag, fpf_threshold

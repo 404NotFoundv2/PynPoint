@@ -79,7 +79,7 @@ from pynpoint.readwrite.textwriting import AttributeWritingModule, \
 from pynpoint.readwrite.textreading import ParangReadingModule
 
 from pynpoint.processing.visir import VisirInitializationModule, \
-                                      FieldStabilizedAngleInterpolationModule, \
+                                      VisirAngleInterpolationModule, \
                                       VisirNodAdditionModule, \
                                       VisirFrameSelectionModule
 #from pynpoint.processing.VisirFrameSelection import VisirFrameSelectionModule

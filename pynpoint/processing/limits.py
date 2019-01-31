@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import sys
 # import os
-import functools
+# import functools
 import warnings
 import multiprocessing as mp
 # import sharedmem
@@ -17,9 +17,11 @@ from pynpoint.core.processing import ProcessingModule
 from pynpoint.util.limits import contrast_limit
 
 # Trail: Sharedmemory
-import mp.sharedctypes
-import ctypes
-
+# import multiprocessing.sharedctypes
+# import ctypes
+import threading
+import queue
+import os
 # os.system('taskset -p 0x48 %d' % os.getpid())
 
 
@@ -222,29 +224,93 @@ class ContrastCurveModule(ProcessingModule):
             for ang in pos_t:
                 positions.append((sep, ang))
 
-        print("Size of images array: ", np.round(images.nbytes/(1e9), 2), "GB")
+        if os.name == "posix":
+            # Check memory requirements. Only on POSIX systems
 
-        # Sharedmemory which doesnt work
-        # image = sharedmem.empty(images.shape)
-        # image[:,:,:] = images[:,:,:]
+            mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
+            mem_gib = mem_bytes / (1024.**3)
 
-        shared_mem_chunck = mp.sharedctypes.RawArray(ctypes.c_float, images.size)
-        images_shared = np.frombuffer(shared_mem_chunck, np.float32).reshape(images.shape)
-        images_shared = images[:, :, :]
+            input_bytes = images.nbytes + psf.nbytes
+            input_gib = input_bytes / (1024.**3)
 
-        pool = mp.Pool(processes=cpu)
+            resources = 0.8  # Set to 80% of total RAM
 
-        func = functools.partial(contrast_limit, images_shared, psf, parang, self.m_psf_scaling,
-                                 self.m_extra_rot, self.m_magnitude, self.m_pca_number,
-                                 self.m_threshold, self.m_accuracy, self.m_aperture,
-                                 self.m_ignore, self.m_cent_size, self.m_edge_size, pixscale)
+            if (input_gib*cpu)/mem_gib >= resources:
+                "Lower the number of cpu's"
 
-        result = pool.map(func, positions)
+                cpu = max(1, int(resources / (input_gib/mem_gib)))
+
+                if cpu > mp.cpu_count():
+                    cpu = mp.cpu_count()
+
+                warnings.warn("Input array images size too large for RAM. "
+                              "Reducing number of cpu's to {}, input size is {}, "
+                              "RAM is {}".format(cpu, input_gib, mem_gib))
+
+        print("Size of images array: ", np.round(input_gib, 2), "GB")
+        print("Expected RAM usage: ", np.round(input_gib*cpu, 2), "GB")
+        print("RAM of this computer: ", np.round(mem_gib, 2), "GB")
+
+        # shared_mem_chunck = multiprocessing.sharedctypes.RawArray(ctypes.c_float, images.size)
+        # images_shared = np.frombuffer(shared_mem_chunck, np.float32).reshape(images.shape)
+        # images_shared = images[:, :, :]
+
+        # pool = multiprocessing.Pool(processes=cpu)
+        # pool = multiprocessing.Pool(processes=None)
+
+        # func = functools.partial(contrast_limit, images_shared, psf, parang, self.m_psf_scaling,
+        #                          self.m_extra_rot, self.m_magnitude, self.m_pca_number,
+        #                          self.m_threshold, self.m_accuracy, self.m_aperture,
+        #                          self.m_ignore, self.m_cent_size, self.m_edge_size, pixscale)
+
+        # result = pool.map(func, positions)
+
+        q = queue.Queue()
+        result = np.array([])
+        jobs = []
+
+        # result = contrast_limit(images, psf, parang, self.m_psf_scaling,
+        #                         self.m_extra_rot, self.m_magnitude, self.m_pca_number,
+        #                         self.m_threshold, self.m_accuracy, self.m_aperture,
+        #                         self.m_ignore, self.m_cent_size, self.m_edge_size,
+        #                         pixscale, positions[0], q, )
+
+        for i, pos in enumerate(positions):
+            thread = threading.Thread(target=contrast_limit,
+                                      args=(images, psf, parang, self.m_psf_scaling,
+                                            self.m_extra_rot, self.m_magnitude, self.m_pca_number,
+                                            self.m_threshold, self.m_accuracy, self.m_aperture,
+                                            self.m_ignore, self.m_cent_size, self.m_edge_size,
+                                            pixscale, pos, q, ))
+            jobs.append(thread)
+
+        print("Number of jobs: ", len(jobs))
+        print("Number of cpu: ", cpu)
+
+        for i, j in enumerate(jobs):
+            j.start()
+
+            if i % (cpu-1) == 0:
+                for k in jobs[i-(cpu-1):(i+1)]:
+                    k.join()
+
+            elif i == len(jobs):
+                for k in jobs:
+                    k.join()
+
+        while not q.empty():
+            result = np.append(result, q.get())
+            q.task_done()
+        q.join()
+
+        print("\n")
+        print("Queue object: ", q.get())
+        print("\n")
 
         # pool.close()
         # pool.join()
 
-        result = np.asarray(result)
+        # result = np.asarray(result)
 
         res_mag = np.zeros((len(pos_r), len(pos_t)))
         res_fpf = np.zeros((len(pos_r)))

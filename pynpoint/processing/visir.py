@@ -734,18 +734,19 @@ class VisirInitializationModule(ReadingModule):
         self.m_image_out_port_4.close_port()
 
 
-class FieldStabilizedAngleInterpolationModule(ProcessingModule):
+class VisirAngleInterpolationModule(ProcessingModule):
     """
     Module for calculating the parallactic angle values by interpolating between the begin and end
-    value of a data cube. This is used for data taken in FieldStabilized mode, giving the datacubes
-    a very small rotation.
+    value of a data cube.
+    In FieldStabilized mode, the datacubes are given a very small rotation, necessary to run the
+    contrastcurve module
 
-    Used and tested in Fieldstabilized Burst mode
     """
 
     def __init__(self,
                  name_in="angle_interpolation",
-                 data_tag="im_arr"):
+                 data_tag="im_arr",
+                 pupilstabilized=True):
         """
         Constructor of AngleInterpolationModule.
 
@@ -754,14 +755,18 @@ class FieldStabilizedAngleInterpolationModule(ProcessingModule):
         :param data_tag: Tag of the database entry for which the parallactic angles are written as
                          attributes.
         :type data_tag: str
+        :param pupilstabilized: Pupilstabilized data (Yes) or FieldStabilized (No)
+        :type pupilstabilized: bool
 
         :return: None
         """
 
-        super(FieldStabilizedAngleInterpolationModule, self).__init__(name_in)
+        super(VisirAngleInterpolationModule, self).__init__(name_in)
 
         self.m_data_in_port = self.add_input_port(data_tag)
         self.m_data_out_port = self.add_output_port(data_tag)
+
+        self.m_pupil = pupilstabilized
 
     def run(self):
         """
@@ -773,31 +778,57 @@ class FieldStabilizedAngleInterpolationModule(ProcessingModule):
         :return: None
         """
 
-        steps = self.m_data_in_port.get_attribute("NFRAMES")
-
-        parang_start = [0.]*len(steps)
-        parang_end = [1e-5]*len(steps)
-
-        new_angles = []
-
-        for i, _ in enumerate(parang_start):
-            progress(i, len(parang_start), "Running FieldStabilizedAngleInterpolationModule...")
-
-            if parang_start[i] < -170. and parang_end[i] > 170.:
-                parang_start[i] += 360.
-
-            elif parang_end[i] < -170. and parang_start[i] > 170.:
-                parang_end[i] += 360.
-
-            new_angles = np.append(new_angles,
-                                   np.linspace(parang_start[i],
-                                               parang_end[i],
-                                               num=steps[i]))
-
-        sys.stdout.write("Running FieldStabilizedAngleInterpolationModule... [DONE]\n")
+        sys.stdout.write("Running VisirAngleInterpolationModule...")
         sys.stdout.flush()
 
+        if self.m_pupil is True:
+            parang_start = self.m_data_in_port.get_attribute("PARANG_START")
+            parang_end = self.m_data_in_port.get_attribute("PARANG_END")
+
+            steps = self.m_data_in_port.get_attribute("NFRAMES")
+
+            if sum(steps) != self.m_data_in_port.get_shape()[0]:
+                cubes = len(steps)
+                frames = self.m_data_in_port.get_shape()[0]
+
+                steps = [int(frames/cubes)] * cubes
+
+            new_angles = []
+
+            for i, _ in enumerate(parang_start):
+
+                if parang_start[i] < -170. and parang_end[i] > 170.:
+                    parang_start[i] += 360.
+
+                elif parang_end[i] < -170. and parang_start[i] > 170.:
+                    parang_end[i] += 360.
+
+                new_angles = np.append(new_angles,
+                                       np.linspace(parang_start[i],
+                                                   parang_end[i],
+                                                   num=steps[i]))
+
+        elif self.m_pupil is False:
+            frames = self.m_data_in_port.get_shape()
+            steps = frames[0]
+
+            parang_start = [0.]
+            parang_end = [1e-4]
+
+            new_angles = []
+
+            new_angles = np.append(new_angles,
+                                   np.linspace(parang_start,
+                                               parang_end,
+                                               num=steps))
+
+        sys.stdout.write("\rRunning VisirAngleInterpolationModule... [DONE]\n")
+        sys.stdout.flush()
+
+        self.m_data_out_port.copy_attributes_from_input_port(self.m_data_in_port)
         self.m_data_out_port.add_attribute("PARANG", new_angles, static=False)
+
+        self.m_data_out_port.close_port()
 
 
 class VisirNodAdditionModule(ProcessingModule):
@@ -868,16 +899,16 @@ class VisirNodAdditionModule(ProcessingModule):
 
         if posang_1 is None or posang_2 is None:
             raise ValueError("Attribute --PARANG-- not found in database. "
-                             "Did you run AngleInterpolationModule before?")
+                             "\nDid you run AngleInterpolationModule before?")
 
         if len(posang_1) != len(data[:, 0, 0]):
             raise ValueError("The number of images: {} is not equal to the number of angles: {}"
-                             "Did you run AngleInterpolation before?".format(len(data[:, 0, 0]),
-                                                                             len(posang_1)))
+                             "\nDid you run AngleInterpolation before?".format(len(data[:, 0, 0]),
+                                                                               len(posang_1)))
 
         if len(posang_1) != len(posang_2):
             raise UserWarning("Attribute --PARANG-- in the central database has a different size "
-                              "for the two input cubes. Image_in_tag_1 --PARANG-- size: {1}, "
+                              "for the two input cubes. \nImage_in_tag_1 --PARANG-- size: {1}, "
                               "Image_in_tag_2 --PARANG-- size: {2}. Reducing to size {3}"
                               "".format(len(posang_1),
                                         len(posang_2),
@@ -886,7 +917,7 @@ class VisirNodAdditionModule(ProcessingModule):
         data_out = np.zeros(data.shape)
 
         for i in range(len(posang_1)):
-            data_out[i, :, :] = rotate(input=data,
+            data_out[i, :, :] = rotate(input=data[i, :, :],
                                        angle=posang_1[i]-posang_2[i],
                                        reshape=False)
 
@@ -925,9 +956,6 @@ class VisirNodAdditionModule(ProcessingModule):
 
         self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port1)
         self.m_image_out_port.add_history_information("VisirNodAdditionModule", "Combined Nod")
-
-        new_angles = self.m_image_in_port1.get_attribute("PARANG")
-        self.m_data_out_port.add_attribute("PARANG", new_angles, static=False)
 
         sys.stdout.write("\rRunning VISIRNodAdditionModule... [DONE]\n")
         sys.stdout.flush()

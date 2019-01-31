@@ -204,14 +204,6 @@ class AngleInterpolationModule(ProcessingModule):
         steps = self.m_data_in_port.get_attribute("NFRAMES")
         ndit = self.m_data_in_port.get_attribute("NDIT")
 
-        """
-        steps = self.m_data_in_port.get_attribute("NFRAMES")
-        ndit = steps
-
-        parang_start = [0.]*len(steps)
-        parang_end = [1e-5]*len(steps)
-        """
-
         if not np.all(ndit == steps):
             warnings.warn("There is a mismatch between the NDIT ({1}) and NFRAMES ({2}) values. "
                           "The derotation angles are calculated with a linear interpolation by "
