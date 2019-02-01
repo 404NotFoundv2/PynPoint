@@ -200,7 +200,5 @@ def contrast_limit(images,
 
     result = (position[0], position[1], fake_mag, fpf_threshold)
     queue.put(result)
-    queue.close()
-    queue.join_thread()
 
     return position[0], position[1], fake_mag, fpf_threshold

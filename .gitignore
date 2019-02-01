@@ -25,4 +25,4 @@ docs/_build
 
 # Vim
 .vim
-.tags
+*.tags
