@@ -41,7 +41,6 @@ ProcessingModule	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-pac
 progress	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from pynpoint.util.module import progress, memory_frames, number_images_port$/;"	i	language:Python
 progress	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from pynpoint.util.module import progress, locate_star$/;"	i	language:Python
 PSFpreparationModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^class PSFpreparationModule(ProcessingModule):$/;"	c	language:Python
-queue	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/limits.py	/^import queue$/;"	i	language:Python
 range	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^from six.moves import range$/;"	i	language:Python
 ReadingModule	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from pynpoint.core.processing import ReadingModule, ProcessingModule$/;"	i	language:Python
 rotate	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^from scipy.ndimage import rotate$/;"	i	language:Python
@@ -68,7 +67,6 @@ sys	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoin
 sys	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/psfpreparation.py	/^import sys$/;"	i	language:Python
 sys	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import sys$/;"	i	language:Python
 sys	/mnt/Documents/ETH/Master Thesis/jasper3/lib/python3.7/site-packages/PynPoint/pynpoint/processing/limits.py	/^import sys$/;"	i	language:Python
-threading	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/limits.py	/^import threading$/;"	i	language:Python
 threading	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import threading$/;"	i	language:Python
 timeit	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^import timeit$/;"	i	language:Python
 uncompress	/mnt/Documents/ETH/Bluesky/jasper_test_3/lib/python3.6/site-packages/PynPoint/pynpoint/processing/visir.py	/^    def uncompress(self):$/;"	m	language:Python	class:VisirInitializationModule

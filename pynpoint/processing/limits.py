@@ -5,24 +5,17 @@ Modules for determining detection limits.
 from __future__ import absolute_import
 
 import sys
-# import os
-# import functools
+import os
 import warnings
 import multiprocessing as mp
-# import sharedmem
 
 import numpy as np
 
 from pynpoint.core.processing import ProcessingModule
 from pynpoint.util.limits import contrast_limit
 
-# Trail: Sharedmemory
 # import multiprocessing.sharedctypes
 # import ctypes
-import threading
-import queue
-import os
-# os.system('taskset -p 0x48 %d' % os.getpid())
 
 
 class ContrastCurveModule(ProcessingModule):
@@ -225,7 +218,7 @@ class ContrastCurveModule(ProcessingModule):
                 positions.append((sep, ang))
 
         if os.name == "posix":
-            # Check memory requirements. Only on POSIX systems
+            # Check memory requirements. Lower the cpu accordingly. Only on POSIX systems
 
             mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
             mem_gib = mem_bytes / (1024.**3)
@@ -247,16 +240,12 @@ class ContrastCurveModule(ProcessingModule):
                               "Reducing number of cpu's to {}, input size is {}, "
                               "RAM is {}".format(cpu, input_gib, mem_gib))
 
-        print("Size of images array: ", np.round(input_gib, 2), "GB")
-        print("Expected RAM usage: ", np.round(input_gib*cpu, 2), "GB")
+        print("\nExpected RAM usage: ", np.round(input_gib*cpu, 2), "GB")
         print("RAM of this computer: ", np.round(mem_gib, 2), "GB")
 
-        # shared_mem_chunck = multiprocessing.sharedctypes.RawArray(ctypes.c_float, images.size)
-        # images_shared = np.frombuffer(shared_mem_chunck, np.float32).reshape(images.shape)
-        # images_shared = images[:, :, :]
-
+        ########################
+        # Old method of implementing multiprocessing
         # pool = multiprocessing.Pool(processes=cpu)
-        # pool = multiprocessing.Pool(processes=None)
 
         # func = functools.partial(contrast_limit, images_shared, psf, parang, self.m_psf_scaling,
         #                          self.m_extra_rot, self.m_magnitude, self.m_pca_number,
@@ -265,62 +254,72 @@ class ContrastCurveModule(ProcessingModule):
 
         # result = pool.map(func, positions)
 
-        q = queue.Queue()
-        result = np.array([])
+        # pool.close()
+        # pool.join()
+        # result = np.asarray(result)
+
+        #######################
+
+        # Create a queue object which will contain the results
+        q = mp.Queue()
+        result = []
         jobs = []
 
-        # result = contrast_limit(images, psf, parang, self.m_psf_scaling,
-        #                         self.m_extra_rot, self.m_magnitude, self.m_pca_number,
-        #                         self.m_threshold, self.m_accuracy, self.m_aperture,
-        #                         self.m_ignore, self.m_cent_size, self.m_edge_size,
-        #                         pixscale, positions[0], q, )
+        # Create for each cpu process an sharedmemory images
+        # Use sharedmemory from multiprocessing package. Not used for increasing speed, but not
+        # needing to pickle the data, which is not possible for image arrays +2GB
+
+        # shared_mem_chunck = multiprocessing.sharedctypes.RawArray(ctypes.c_float, images.size)
+        # images_shared = np.frombuffer(shared_mem_chunck, np.float32).reshape(images.shape)
+        # images_shared = images[:, :, :]
 
         for i, pos in enumerate(positions):
-            thread = threading.Thread(target=contrast_limit,
-                                      args=(images, psf, parang, self.m_psf_scaling,
-                                            self.m_extra_rot, self.m_magnitude, self.m_pca_number,
-                                            self.m_threshold, self.m_accuracy, self.m_aperture,
-                                            self.m_ignore, self.m_cent_size, self.m_edge_size,
-                                            pixscale, pos, q, ))
-            jobs.append(thread)
+
+            process = mp.Process(target=contrast_limit,
+                                 args=(images, psf, parang, self.m_psf_scaling,
+                                       self.m_extra_rot, self.m_magnitude, self.m_pca_number,
+                                       self.m_threshold, self.m_accuracy, self.m_aperture,
+                                       self.m_ignore, self.m_cent_size, self.m_edge_size,
+                                       pixscale, pos, q, ),
+                                 name=(str(os.path.basename(__file__)) + '_radius=' +
+                                       str(np.round(pos[0]*pixscale, 1)) + '_angle=' +
+                                       str(np.round(pos[1], 1))))
+            jobs.append(process)
 
         print("Number of jobs: ", len(jobs))
-        print("Number of cpu: ", cpu)
 
         for i, j in enumerate(jobs):
             j.start()
+            print("Starting ", j.name)
 
-            if i % (cpu-1) == 0:
-                for k in jobs[i-(cpu-1):(i+1)]:
+            if (i+1) % cpu == 0:
+                # Start -cpu- number of processes. Wait for them to finish and start again -cpu-
+                # number of processes.
+
+                for k in jobs[i+1-cpu:(i+1)]:
                     k.join()
 
-            elif i == len(jobs):
-                for k in jobs:
+            elif (i+1) == len(jobs) and (i+1) % cpu != 0:
+                # Wait for the last processes to finish if number of processes is not a multiple
+                # of -cpu-
+
+                for k in jobs[(i+1 - (i+1) % cpu):]:
                     k.join()
 
         while not q.empty():
-            result = np.append(result, q.get())
-            q.task_done()
-        q.join()
+            result.append(q.get())
 
-        print("\n")
-        print("Queue object: ", q.get())
-        print("\n")
-
-        # pool.close()
-        # pool.join()
-
-        # result = np.asarray(result)
+        print("\nResult: \n", result)
 
         res_mag = np.zeros((len(pos_r), len(pos_t)))
         res_fpf = np.zeros((len(pos_r)))
 
         count = 0
         for i in range(len(pos_r)):
-            res_fpf[i] = result[i*len(pos_t), 3]
+            res_fpf[i] = result[i*len(pos_t)][3]
 
             for j in range(len(pos_t)):
-                res_mag[i, j] = result[count, 2]
+                res_mag[i, j] = result[count][2]
                 count += 1
 
         limits = np.column_stack((pos_r*pixscale,
