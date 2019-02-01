@@ -236,12 +236,13 @@ class ContrastCurveModule(ProcessingModule):
                 if cpu > mp.cpu_count():
                     cpu = mp.cpu_count()
 
-                warnings.warn("Input array images size too large for RAM. "
+                warnings.warn("\nInput array images size too large for RAM. "
                               "Reducing number of cpu's to {}, input size is {}, "
-                              "RAM is {}".format(cpu, input_gib, mem_gib))
+                              "RAM Server is {}".format(
+                                  cpu, np.round(input_gib, 1), np.round(mem_gib, 1)))
 
-        print("\nExpected RAM usage: ", np.round(input_gib*cpu, 2), "GB")
-        print("RAM of this computer: ", np.round(mem_gib, 2), "GB")
+        print("\nExpected RAM usage: ", np.round(input_gib*cpu, 1), "GB")
+        print("RAM of this computer: ", np.round(mem_gib, 1), "GB")
 
         ########################
         # Old method of implementing multiprocessing
@@ -309,7 +310,7 @@ class ContrastCurveModule(ProcessingModule):
         while not q.empty():
             result.append(q.get())
 
-        print("\nResult: \n", result)
+        # print("\nResult: \n", result)
 
         res_mag = np.zeros((len(pos_r), len(pos_t)))
         res_fpf = np.zeros((len(pos_r)))
