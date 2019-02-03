@@ -118,13 +118,16 @@ def contrast_limit(images,
 
         im_shape = (fake.shape[-2], fake.shape[-1])
 
-        mask = create_mask(im_shape, [cent_size, edge_size])
+        # mask = create_mask(im_shape, [cent_size, edge_size])
 
-        _, im_res = pca_psf_subtraction(images=fake*mask,
-                                        angles=-1.*parang+extra_rot,
-                                        pca_number=pca_number)
+        # _, im_res = pca_psf_subtraction(images=fake*mask,
+        #                                 angles=-1.*parang+extra_rot,
+        #                                 pca_number=pca_number)
 
-        stack = combine_residuals(method="mean", res_rot=im_res)
+        # stack = combine_residuals(method="mean", res_rot=im_res)
+
+        # NON_PCA_SUBTRACTION _ REMOVE otherwsie
+        stack = combine_residuals(method="mean", res_rot=fake.copy())
 
         _, _, fpf = false_alarm(image=stack,
                                 x_pos=x_fake,

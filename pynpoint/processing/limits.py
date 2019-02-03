@@ -8,6 +8,7 @@ import sys
 import os
 import warnings
 import multiprocessing as mp
+import multiprocessing.sharedctypes
 
 import numpy as np
 
@@ -227,10 +228,10 @@ class ContrastCurveModule(ProcessingModule):
 
             resources = 0.8  # Set to 80% of total RAM
 
-            if (input_gib*cpu)/mem_gib >= resources:
+            if (input_gib*cpu*2)/mem_gib >= resources:
                 "Lower the number of cpu's"
 
-                cpu = max(1, int(resources / (input_gib/mem_gib)))
+                cpu = max(1, int(resources / (input_gib*2/mem_gib)))
 
                 if cpu > mp.cpu_count():
                     cpu = mp.cpu_count()
@@ -291,6 +292,7 @@ class ContrastCurveModule(ProcessingModule):
         images_shared[:, :, :] = images[:, :, :]
 
         print("Number of jobs: ", len(jobs))
+        print("CPU = ", cpu)
 
         for i, j in enumerate(jobs):
             j.start()
@@ -312,7 +314,6 @@ class ContrastCurveModule(ProcessingModule):
 
         # Send termination sentinel to queue and block till all tasks are done
         q.put(None)
-        q.join()
 
         while True:
             item = q.get()
@@ -322,7 +323,7 @@ class ContrastCurveModule(ProcessingModule):
 
             else:
                 result.append(item)
-            q.task_done()
+            # q.task_done()
 
         res_mag = np.zeros((len(pos_r), len(pos_t)))
         res_fpf = np.zeros((len(pos_r)))
