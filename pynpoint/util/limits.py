@@ -3,6 +3,7 @@ Functions for calculating detection limits.
 """
 
 import sys
+import os
 import warnings
 
 import numpy as np
@@ -15,8 +16,8 @@ from pynpoint.util.psf import pca_psf_subtraction
 from pynpoint.util.residuals import combine_residuals
 
 
-def contrast_limit(images,
-                   psf,
+def contrast_limit(tmp_images,
+                   tmp_psf,
                    parang,
                    psf_scaling,
                    extra_rot,
@@ -84,6 +85,9 @@ def contrast_limit(images,
     :rtype: float, float, float, float
     """
 
+    frames = np.load(tmp_images)
+    psf = np.load(tmp_psf)
+
     if threshold[0] == "sigma":
         fpf_threshold = student_fpf(sigma=threshold[1],
                                     radius=position[0],
@@ -96,7 +100,7 @@ def contrast_limit(images,
     else:
         raise ValueError("Threshold type not recognized.")
 
-    x_fake, y_fake = polar_to_cartesian(images, position[0], position[1]-extra_rot)
+    x_fake, y_fake = polar_to_cartesian(frames, position[0], position[1]-extra_rot)
 
     list_fpf = []
     list_mag = [magnitude[0]]
@@ -109,7 +113,7 @@ def contrast_limit(images,
     while True:
         mag = list_mag[-1]
 
-        fake = fake_planet(images=images,
+        fake = fake_planet(images=frames,
                            psf=psf,
                            parang=parang,
                            position=(position[0], position[1]),
@@ -118,16 +122,16 @@ def contrast_limit(images,
 
         im_shape = (fake.shape[-2], fake.shape[-1])
 
-        # mask = create_mask(im_shape, [cent_size, edge_size])
+        mask = create_mask(im_shape, [cent_size, edge_size])
 
-        # _, im_res = pca_psf_subtraction(images=fake*mask,
-        #                                 angles=-1.*parang+extra_rot,
-        #                                 pca_number=pca_number)
+        _, im_res = pca_psf_subtraction(images=fake*mask,
+                                        angles=-1.*parang+extra_rot,
+                                        pca_number=pca_number)
 
-        # stack = combine_residuals(method="mean", res_rot=im_res)
+        stack = combine_residuals(method="mean", res_rot=im_res)
 
         # NON_PCA_SUBTRACTION _ REMOVE otherwsie
-        stack = combine_residuals(method="mean", res_rot=fake.copy())
+        # stack = combine_residuals(method="mean", res_rot=fake.copy())
 
         _, _, fpf = false_alarm(image=stack,
                                 x_pos=x_fake,

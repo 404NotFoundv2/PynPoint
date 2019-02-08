@@ -197,6 +197,9 @@ class Pypeline(object):
                 if attributes[key]["value"] is not None:
                     config.attrs[key] = attributes[key]["value"]
 
+            # config.attrs["WORKING_PLACE"] = np.string_(self._m_working_place)
+            config.attrs["WORKING_PLACE"] = self._m_working_place
+
             hdf.close()
 
         config_file = self._m_working_place+"/PynPoint_config.ini"

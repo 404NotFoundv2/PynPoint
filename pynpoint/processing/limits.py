@@ -8,14 +8,14 @@ import sys
 import os
 import warnings
 import multiprocessing as mp
-import multiprocessing.sharedctypes
+# import multiprocessing.sharedctypes
+# import ctypes
+# import tempfile
 
 import numpy as np
 
 from pynpoint.core.processing import ProcessingModule
 from pynpoint.util.limits import contrast_limit
-
-import ctypes
 
 
 class ContrastCurveModule(ProcessingModule):
@@ -268,18 +268,22 @@ class ContrastCurveModule(ProcessingModule):
 
         # Create for each cpu process an sharedmemory images. Not used for increasing speed,
         # but not needing to pickle the data, which is not possible for image arrays +2GB
+        # shared_mem_base = mp.Array(ctypes.c_float, images.size)
+        # images_shared = np.ctypeslib.as_array(shared_mem_base.get_obj()).reshape(images.shape)
+        # images_shared[:, :, :] = images[:, :, :]
 
-        # shared_mem_chunck = mp.sharedctypes.RawArray(ctypes.c_float, images.size)
-        # images_shared = np.frombuffer(shared_mem_chunck, np.float32).reshape(images.shape)
-        # images_shared = images[:, :, :]
+        # Create temporary files
+        working_place = str(self._m_config_port.get_attribute("WORKING_PLACE"))
+        tmp_im_str = working_place + "/tmp_images.npy"
+        tmp_psf_str = working_place + "/tmp_psf.npy"
 
-        shared_mem_base = mp.Array(ctypes.c_float, images.size)
-        images_shared = np.ctypeslib.as_array(shared_mem_base.get_obj()).reshape(images.shape)
+        np.save(tmp_im_str, images)
+        np.save(tmp_psf_str, psf)
 
         for i, pos in enumerate(positions):
 
             process = mp.Process(target=contrast_limit,
-                                 args=(images_shared, psf, parang, self.m_psf_scaling,
+                                 args=(tmp_im_str, tmp_psf_str, parang, self.m_psf_scaling,
                                        self.m_extra_rot, self.m_magnitude, self.m_pca_number,
                                        self.m_threshold, self.m_accuracy, self.m_aperture,
                                        self.m_ignore, self.m_cent_size, self.m_edge_size,
@@ -289,8 +293,6 @@ class ContrastCurveModule(ProcessingModule):
                                        str(np.round(pos[1], 1))))
             jobs.append(process)
 
-        images_shared[:, :, :] = images[:, :, :]
-
         print("Number of jobs: ", len(jobs))
         print("CPU = ", cpu)
 
@@ -299,7 +301,7 @@ class ContrastCurveModule(ProcessingModule):
             print("Starting ", j.name)
 
             if (i+1) % cpu == 0:
-                # Start -cpu- number of processes. Wait for them to finish and start again -cpu-
+                # Start *cpu* number of processes. Wait for them to finish and start again *cpu*
                 # number of processes.
 
                 for k in jobs[i+1-cpu:(i+1)]:
@@ -307,7 +309,7 @@ class ContrastCurveModule(ProcessingModule):
 
             elif (i+1) == len(jobs) and (i+1) % cpu != 0:
                 # Wait for the last processes to finish if number of processes is not a multiple
-                # of -cpu-
+                # of *cpu*
 
                 for k in jobs[(i+1 - (i+1) % cpu):]:
                     k.join()
@@ -324,6 +326,9 @@ class ContrastCurveModule(ProcessingModule):
             else:
                 result.append(item)
             # q.task_done()
+
+        os.remove(tmp_im_str)
+        os.remove(tmp_psf_str)
 
         res_mag = np.zeros((len(pos_r), len(pos_t)))
         res_fpf = np.zeros((len(pos_r)))
