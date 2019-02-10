@@ -42,17 +42,17 @@ Documentation can be found at `http://pynpoint.readthedocs.io <http://pynpoint.r
 
 Installation from Github.com:
 
+* Create a virtualenv:
+
+.. code-block:: bash
+
+        python3 -m venv virtualenv
+
 * Clone the repository in the desired folder
 
 .. code-block:: bash
 
         git clone https://github.com/404NotFoundv2/PynPoint.git
-
-* Create a virtualenv: 
-
-.. code-block:: bash
-
-         virtualenv venv
 
 * Add in the config file of your virtualenv (in venv/bin/activate):
 
@@ -61,17 +61,18 @@ Installation from Github.com:
         export PYTHONPATH="/path/to/the/pynpoint_folder"
 
 
-* Activate the virtualenv: 
+* Activate the virtualenv:
 
 .. code-block:: bash
 
-        source venv/bin/activate
+        source virtualenv/bin/activate
 
-* Install the required packages: 
+* Install the required packages:
 
 .. code-block:: bash
 
-        pip install -r /path/to/the/pynpoint_folder/requirements.txt
+        python3 -m pip install --upgrade pip
+        python3 -m pip install -r PynPoint/requirements.txt
 
 For me:
 
