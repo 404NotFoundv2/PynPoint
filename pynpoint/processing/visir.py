@@ -4,6 +4,7 @@ import numpy as np
 from astropy.io import fits
 import os
 import subprocess
+import shlex
 import math
 import timeit
 import sys
@@ -394,8 +395,15 @@ class VisirInitializationModule(ReadingModule):
         return None
         """
 
-        command = "uncompress " + filename
-        subprocess.check_call(command.split())
+        try:
+            command = "uncompress " + filename
+            subprocess.check_call(shlex.split(command))
+
+        except FileNotFoundError or OSError:
+            # If command *uncompress* is not existing
+
+            command = "gunzip -d " + filename
+            subprocess.check_call(shlex.split(command))
 
         return None
 
