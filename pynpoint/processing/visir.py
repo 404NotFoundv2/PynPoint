@@ -10,7 +10,7 @@ import sys
 import six
 import warnings
 from pynpoint.core.processing import ReadingModule, ProcessingModule
-from pynpoint.util.module import progress, locate_star
+from pynpoint.util.module import progress, locate_star, memory_frames
 from pynpoint.core.attributes import get_attributes
 import threading
 from scipy.ndimage import rotate
@@ -961,6 +961,70 @@ class VisirNodAdditionModule(ProcessingModule):
         sys.stdout.flush()
 
         self.m_image_out_port.close_port()
+
+
+class VisirInverterModule(ProcessingModule):
+    """
+    Module that inverts the images. Required after VisirInitializationModule to let the
+    AlignmentModule work properly.
+    """
+
+    def __init__(self,
+                 name_in="Inverter",
+                 image_in_tag="image_in",
+                 image_out_tag="image_out"):
+        '''
+        Constructor of the VisirNodSubtractionModule
+        :param name_in: Unique name of the instance
+        :type name-in: str
+        :param image_in_tag: Entry of the database used as input of the module
+        :type image_in_tag: str
+        :param image_out_tag: Entry written as output
+        :type image_out_tag: str
+
+        :return: None
+        '''
+
+        super(VisirInverterModule, self).__init__(name_in)
+
+        # Ports
+        self.m_image_in_port = self.add_input_port(image_in_tag)
+        self.m_image_out_port = self.add_output_port(image_out_tag)
+
+    def _initialize(self):
+        """
+        Function that clears the __init__ tags if they are not
+        empty given incorrect input
+        """
+
+        if self.m_image_out_port is not None:
+            self.m_image_out_port.del_all_data()
+            self.m_image_out_port.del_all_attributes()
+
+    def run(self):
+        self._initialize()
+
+        memory = self._m_config_port.get_attribute("MEMORY")
+        nimages = self.m_image_in_port.get_shape()[0]
+
+        frames = memory_frames(memory, nimages)
+
+        for i, _ in enumerate(frames[:-1]):
+            progress(i, len(frames[:-1]), "Running VISIRInverterModule...")
+
+            images = self.m_image_in_port[frames[i]:frames[i+1], ]
+            images = -1*images[:, :, :]
+
+            self.m_image_out_port.append(images)
+
+        self.m_image_out_port1.copy_attributes_from_input_port(self.m_image_in_port1)
+        self.m_image_out_port1.add_history_information("VisirInverterModule",
+                                                       "Inverted the images")
+
+        self.m_image_out_port.close_port()
+
+        sys.stdout.write("\rRunning VISIRInverterModule... [DONE]\n")
+        sys.stdout.flush()
 
 
 class VisirFrameSelectionModule(ProcessingModule):

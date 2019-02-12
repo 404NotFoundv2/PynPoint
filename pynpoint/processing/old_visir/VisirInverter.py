@@ -1,18 +1,16 @@
-'''
-Module that subtracts the different Nod positions from each other.
-This Module should run *after* the chop subtraction.
-
-It assumes that the number of frames taken in every Nod position is the same.
-
-@Jasper Jonker
-'''
-
 import numpy as np
 import sys
 from pynpoint.core.processing import ProcessingModule
 
 
 class VisirInverterModule(ProcessingModule):
+    """
+    Module that subtracts the different Nod positions from each other.
+    This Module should run *after* the chop subtraction.
+
+    It assumes that the number of frames taken in every Nod position is the same.
+    """
+
     def __init__(self,
                  name_in="Inverter",
                  image_in_tag="image_in",
