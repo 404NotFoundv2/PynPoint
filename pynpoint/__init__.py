@@ -81,7 +81,8 @@ from pynpoint.readwrite.textreading import ParangReadingModule
 from pynpoint.processing.visir import VisirInitializationModule, \
                                       VisirAngleInterpolationModule, \
                                       VisirNodAdditionModule, \
-                                      VisirFrameSelectionModule
+                                      VisirFrameSelectionModule, \
+                                      VisirInverterModule
 #from pynpoint.processing.VisirFrameSelection import VisirFrameSelectionModule
 #from pynpoint.processing.VisirInitialization import VisirInitializationModule
 #from pynpoint.processing.VisirInverter import VisirInverterModule

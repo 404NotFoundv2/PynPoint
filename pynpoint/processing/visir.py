@@ -1025,9 +1025,9 @@ class VisirInverterModule(ProcessingModule):
 
             self.m_image_out_port.append(images)
 
-        self.m_image_out_port1.copy_attributes_from_input_port(self.m_image_in_port1)
-        self.m_image_out_port1.add_history_information("VisirInverterModule",
-                                                       "Inverted the images")
+        self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
+        self.m_image_out_port.add_history_information("VisirInverterModule",
+                                                      "Inverted the images")
 
         self.m_image_out_port.close_port()
 
