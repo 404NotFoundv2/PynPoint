@@ -8,14 +8,12 @@ import sys
 import os
 import warnings
 import multiprocessing as mp
-# import multiprocessing.sharedctypes
-# import ctypes
-# import tempfile
 
 import numpy as np
 
 from pynpoint.core.processing import ProcessingModule
 from pynpoint.util.limits import contrast_limit
+from pynpoint.util.module import progress
 
 
 class ContrastCurveModule(ProcessingModule):
@@ -209,7 +207,7 @@ class ContrastCurveModule(ProcessingModule):
 
         pos_r = np.delete(pos_r, index_del)
 
-        sys.stdout.write("Running ContrastCurveModule")
+        sys.stdout.write("Running ContrastCurveModule\r")
         sys.stdout.flush()
 
         positions = []
@@ -217,115 +215,63 @@ class ContrastCurveModule(ProcessingModule):
             for ang in pos_t:
                 positions.append((sep, ang))
 
-        if os.name == "posix":
-            # Check memory requirements. Lower the cpu accordingly. Only on POSIX systems
-
-            mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
-            mem_gib = mem_bytes / (1024.**3)
-
-            input_bytes = images.nbytes + psf.nbytes
-            input_gib = input_bytes / (1024.**3)
-
-            resources = 0.8  # Set to 80% of total RAM
-
-            if (input_gib*cpu*2)/mem_gib >= resources:
-                "Lower the number of cpu's"
-
-                cpu = max(1, int(resources / (input_gib*2/mem_gib)))
-
-                if cpu > mp.cpu_count():
-                    cpu = mp.cpu_count()
-
-                warnings.warn("\nInput array images size too large for RAM. "
-                              "Reducing number of cpu's to {}, input size is {}, "
-                              "RAM Server is {}".format(
-                                  cpu, np.round(input_gib, 1), np.round(mem_gib, 1)))
-
-        print("\nExpected RAM usage: ", np.round(input_gib*cpu, 1), "GB (",
-              np.round(input_gib*cpu*2/mem_gib*100, 1), "%)")
-
-        ########################
-        # Old method of implementing multiprocessing
-        # pool = multiprocessing.Pool(processes=cpu)
-
-        # func = functools.partial(contrast_limit, images_shared, psf, parang, self.m_psf_scaling,
-        #                          self.m_extra_rot, self.m_magnitude, self.m_pca_number,
-        #                          self.m_threshold, self.m_accuracy, self.m_aperture,
-        #                          self.m_ignore, self.m_cent_size, self.m_edge_size, pixscale)
-
-        # result = pool.map(func, positions)
-
-        # pool.close()
-        # pool.join()
-        # result = np.asarray(result)
-
-        #######################
-
         # Create a queue object which will contain the results
-        q = mp.Queue()
+        queue = mp.Queue()
+
         result = []
         jobs = []
 
-        # Create for each cpu process an sharedmemory images. Not used for increasing speed,
-        # but not needing to pickle the data, which is not possible for image arrays +2GB
-        # shared_mem_base = mp.Array(ctypes.c_float, images.size)
-        # images_shared = np.ctypeslib.as_array(shared_mem_base.get_obj()).reshape(images.shape)
-        # images_shared[:, :, :] = images[:, :, :]
+        working_place = self._m_config_port.get_attribute("WORKING_PLACE")
 
         # Create temporary files
-        working_place = str(self._m_config_port.get_attribute("WORKING_PLACE"))
-        tmp_im_str = working_place + "/tmp_images.npy"
-        tmp_psf_str = working_place + "/tmp_psf.npy"
+        tmp_im_str = os.path.join(working_place, "tmp_images.npy")
+        tmp_psf_str = os.path.join(working_place, "tmp_psf.npy")
 
         np.save(tmp_im_str, images)
         np.save(tmp_psf_str, psf)
 
         for i, pos in enumerate(positions):
-
             process = mp.Process(target=contrast_limit,
                                  args=(tmp_im_str, tmp_psf_str, parang, self.m_psf_scaling,
                                        self.m_extra_rot, self.m_magnitude, self.m_pca_number,
                                        self.m_threshold, self.m_accuracy, self.m_aperture,
                                        self.m_ignore, self.m_cent_size, self.m_edge_size,
-                                       pixscale, pos, q, ),
+                                       pixscale, pos, queue, ),
                                  name=(str(os.path.basename(__file__)) + '_radius=' +
                                        str(np.round(pos[0]*pixscale, 1)) + '_angle=' +
                                        str(np.round(pos[1], 1))))
+
             jobs.append(process)
 
-        print("Number of jobs: ", len(jobs))
-        print("CPU = ", cpu)
+        for i, job in enumerate(jobs):
+            job.start()
 
-        for i, j in enumerate(jobs):
-            j.start()
-            print("Starting ", j.name)
-
-            if (i+1) % cpu == 0:
+            if (i+1)%cpu == 0:
                 # Start *cpu* number of processes. Wait for them to finish and start again *cpu*
                 # number of processes.
 
                 for k in jobs[i+1-cpu:(i+1)]:
                     k.join()
 
-            elif (i+1) == len(jobs) and (i+1) % cpu != 0:
+            elif (i+1) == len(jobs) and (i+1)%cpu != 0:
                 # Wait for the last processes to finish if number of processes is not a multiple
                 # of *cpu*
 
-                for k in jobs[(i+1 - (i+1) % cpu):]:
+                for k in jobs[(i + 1 - (i+1)%cpu):]:
                     k.join()
 
+            progress(i, len(jobs), "Running ConstrastCurveModule...")
+
         # Send termination sentinel to queue and block till all tasks are done
-        q.put(None)
+        queue.put(None)
 
         while True:
-            item = q.get()
+            item = queue.get()
 
             if item is None:
                 break
-
             else:
                 result.append(item)
-            # q.task_done()
 
         os.remove(tmp_im_str)
         os.remove(tmp_psf_str)
@@ -348,7 +294,7 @@ class ContrastCurveModule(ProcessingModule):
 
         self.m_contrast_out_port.set_all(limits, data_dim=2)
 
-        sys.stdout.write(" [DONE]\n")
+        sys.stdout.write("\rRunning ConstrastCurveModule...[DONE]\n")
         sys.stdout.flush()
 
         history = str(self.m_threshold[0])+" = "+str(self.m_threshold[1])
