@@ -3,7 +3,6 @@ Functions for calculating detection limits.
 """
 
 import sys
-import os
 import warnings
 
 import numpy as np
@@ -85,7 +84,7 @@ def contrast_limit(tmp_images,
     :rtype: float, float, float, float
     """
 
-    frames = np.load(tmp_images)
+    images = np.load(tmp_images)
     psf = np.load(tmp_psf)
 
     if threshold[0] == "sigma":
@@ -100,7 +99,7 @@ def contrast_limit(tmp_images,
     else:
         raise ValueError("Threshold type not recognized.")
 
-    x_fake, y_fake = polar_to_cartesian(frames, position[0], position[1]-extra_rot)
+    x_fake, y_fake = polar_to_cartesian(images, position[0], position[1]-extra_rot)
 
     list_fpf = []
     list_mag = [magnitude[0]]
@@ -113,7 +112,7 @@ def contrast_limit(tmp_images,
     while True:
         mag = list_mag[-1]
 
-        fake = fake_planet(images=frames,
+        fake = fake_planet(images=images,
                            psf=psf,
                            parang=parang,
                            position=(position[0], position[1]),
@@ -129,9 +128,6 @@ def contrast_limit(tmp_images,
                                         pca_number=pca_number)
 
         stack = combine_residuals(method="mean", res_rot=im_res)
-
-        # NON_PCA_SUBTRACTION _ REMOVE otherwsie
-        # stack = combine_residuals(method="mean", res_rot=fake.copy())
 
         _, _, fpf = false_alarm(image=stack,
                                 x_pos=x_fake,
@@ -201,9 +197,6 @@ def contrast_limit(tmp_images,
             sys.stdout.flush()
 
             break
-
-    # sys.stdout.write('.')
-    # sys.stdout.flush()
 
     result = (position[0], position[1], fake_mag, fpf_threshold)
     queue.put(result)
