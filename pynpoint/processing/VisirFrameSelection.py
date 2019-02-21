@@ -266,12 +266,12 @@ class VisirFrameSelectionModule(ProcessingModule):
         if self.m_num_ref is None or self.m_num_ref > nimages or self.m_num_ref == 0:
             self.m_num_ref = nimages
 
-        if self.m_num_ref > memory:
-            self.m_num_ref = memory
-            warnings.warn("The number of references set is larger than "
-                          "the memory allowed. Change this in the "
-                          "configuration file. Memory={}, "
-                          " num_ref={}".format(memory, self.m_num_ref))
+        # if self.m_num_ref > memory:
+        #     # self.m_num_ref = memory
+        #     warnings.warn("The number of references set is larger than "
+        #                   "the memory allowed. Change this in the "
+        #                   "configuration file. Memory={}, "
+        #                   " num_ref={}".format(memory, self.m_num_ref))
 
         frames = memory_frames(self.m_num_ref, nimages)
 
@@ -330,7 +330,7 @@ class VisirFrameSelectionModule(ProcessingModule):
         # print nframes
         indexx = self.m_image_in_port.get_attribute("INDEX")
         # print indexx
-        parang = self.m_image_in_port.get_attribute("PARANG_START") #PARANG_START?
+        parang = self.m_image_in_port.get_attribute("PARANG") #PARANG_START?
         # print parang
 
         im_shape = self.m_image_in_port.get_shape()
@@ -339,6 +339,12 @@ class VisirFrameSelectionModule(ProcessingModule):
 
         self._initialize()
         frames_removed = self.frame()
+
+        frames_removed_new = frames_removed[::-1]
+        for i, f in enumerate(frames_removed_new):
+            parang = np.delete(parang, f)
+        print("length parang now: ", len(parang))
+        print("length frames: ", (nimages-len(frames_removed)))
 
         # print "length parang: ", len(parang)
         # Check this: should be here
@@ -354,13 +360,13 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_image_out_port_2.copy_attributes_from_input_port(self.m_image_in_port)
 
         self.m_image_out_port.add_attribute("INDEX", np.arange(0, (nimages-len(frames_removed)), 1),
-                                            static=False)
-        #self.m_image_out_port.add_attribute("PARANG", parang, static=False)
+                static=False)
+        self.m_image_out_port.add_attribute("PARANG", parang, static=False)
         print("Number frames removed: ", len(frames_removed))
         non_static = self.m_image_in_port.get_all_non_static_attributes()
 
-        if "NFRAMES" in non_static:
-            self.m_image_out_port.del_attribute("NFRAMES")
+        # if "NFRAMES" in non_static:
+        #     self.m_image_out_port.del_attribute("NFRAMES")
 
         self.m_image_out_port.add_attribute("Frames_Removed", frames_removed,
                                             static=False)

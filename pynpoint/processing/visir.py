@@ -14,6 +14,8 @@ from pynpoint.core.processing import ReadingModule, ProcessingModule
 from pynpoint.util.module import progress, locate_star, memory_frames
 from pynpoint.core.attributes import get_attributes
 import threading
+import multiprocessing as mp
+import ctypes
 from scipy.ndimage import rotate
 
 
@@ -1051,7 +1053,7 @@ class VisirFrameSelectionModule(ProcessingModule):
                  aperture="3.",
                  fwhm="0.3",
                  num_ref=100,
-                 sigma=5.):
+                 sigma=2.):
         """
         Constructor of the VisirFrameSelectionModule
         :param name_in: Unique name of the instance
@@ -1100,14 +1102,13 @@ class VisirFrameSelectionModule(ProcessingModule):
         self.m_sigma = sigma
 
     def _initialize(self):
-        if self.m_image_in_port.tag == self.m_image_out_port.tag or \
-           self.m_image_in_port.tag == self.m_image_out_port_rem.tag or \
-           self.m_image_in_port.tag == self.m_image_out_port_std.tag:
+        if self.m_image_in_port.tag in {self.m_image_out_port.tag,
+                                        self.m_image_out_port_rem.tag,
+                                        self.m_image_out_port_std.tag}:
             raise ValueError("Input and output ports should have a different tag.")
 
         if self.m_method != "median" and self.m_method != "mean":
-            raise ValueError("The parameter method should be set to "
-                             "'median' or 'mean'")
+            raise ValueError("The parameter method should be set to 'median' or 'mean'")
 
         if not isinstance(self.m_aperture, float):
             raise ValueError("The parameter aperture should be a float")
@@ -1133,12 +1134,10 @@ class VisirFrameSelectionModule(ProcessingModule):
             self.m_image_out_port_std.del_all_data()
             self.m_image_out_port_std.del_all_attributes()
 
-    def mask(self, i):
+    def mask(self, image):
         """
         Mask the input images with a diameter of fwhm and return
         """
-
-        image = self.m_image_in_port.__getitem__(i)
 
         pixscale = self.m_image_in_port.get_attribute("PIXSCALE")
 
@@ -1177,17 +1176,43 @@ class VisirFrameSelectionModule(ProcessingModule):
         nimages = im_shape[0]
         """
 
+        # Check if input tags are set correctly
         self._initialize()
 
         image_shape = self.m_image_in_port.get_shape()
+        # masked_image = np.zeros(image_shape, dtype=np.float32)
 
-        masked_image = np.zeros(image_shape, dtype=np.float32)
+        images = self.m_image_in_port.get_all()
+        shared_mem_base = mp.Array(ctypes.c_float, images.size)
+        images_shared = np.ctypeslib.as_array(shared_mem_base.get_obj()).reshape(images.shape)
+        images_shared = images[:, :, :]
 
-        # for i in range(images.shape[0]):
-        #     t = threading.Tread(target=self.mask, args=(i,))
+        cpu = 4
+        thread = []
 
-        masked_image[0, :, :] = self.mask(1)
-        print(masked_image)
+        for i in range(image_shape[0]):  # +1?
+            t = threading.Thread(target=self.mask, args=(images_shared))
+            thread.append(t)
+
+        thread[0].start()
+        thread[0].join()
+
+        # for i, t in enumerate(thread):
+        #     t.start()
+
+        #     if (i+1) % cpu == 0:
+        #         # Start -cpu- number of processes. Wait for them to finish and start again -cpu-
+        #         # number of processes.
+
+        #         for k in thread[i+1-cpu:(i+1)]:
+        #             k.join()
+
+        #     elif (i+1) == len(thread) and (i+1) % cpu != 0:
+        #         # Wait for the last processes to finish if number of processes is not a multiple
+        #         # of -cpu-
+
+        #         for k in thread[(i+1 - (i+1) % cpu):]:
+        #             k.join()
 
         history = "Number of frames removed ="+""
 
