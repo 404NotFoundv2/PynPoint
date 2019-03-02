@@ -15,6 +15,7 @@ from pynpoint.util.module import progress, locate_star, memory_frames
 from pynpoint.core.attributes import get_attributes
 import threading
 import multiprocessing as mp
+from functools import partial
 import ctypes
 from scipy.ndimage import rotate
 
@@ -796,6 +797,9 @@ class VisirAngleInterpolationModule(ProcessingModule):
             parang_end = self.m_data_in_port.get_attribute("PARANG_END")
 
             steps = self.m_data_in_port.get_attribute("NFRAMES")
+            print("Number of frames: ", self.m_data_in_port.get_shape()[0])
+            print("Number of cubes: ", len(steps))
+            print("Left over?: ", self.m_data_in_port.get_shape()[0]/len(steps))
 
             if sum(steps) != self.m_data_in_port.get_shape()[0]:
                 cubes = len(steps)
@@ -1176,51 +1180,33 @@ class VisirFrameSelectionModule(ProcessingModule):
         nimages = im_shape[0]
         """
 
+        sys.stdout.write("Running VisirFrameSelectionModule...")
+        sys.stdout.flush()
+
         # Check if input tags are set correctly
         self._initialize()
 
         image_shape = self.m_image_in_port.get_shape()
-        # masked_image = np.zeros(image_shape, dtype=np.float32)
-
         images = self.m_image_in_port.get_all()
-        shared_mem_base = mp.Array(ctypes.c_float, images.size)
-        images_shared = np.ctypeslib.as_array(shared_mem_base.get_obj()).reshape(images.shape)
-        images_shared = images[:, :, :]
 
-        cpu = 4
-        thread = []
-
-        for i in range(image_shape[0]):  # +1?
-            t = threading.Thread(target=self.mask, args=(images_shared))
-            thread.append(t)
-
-        thread[0].start()
-        thread[0].join()
-
-        # for i, t in enumerate(thread):
-        #     t.start()
-
-        #     if (i+1) % cpu == 0:
-        #         # Start -cpu- number of processes. Wait for them to finish and start again -cpu-
-        #         # number of processes.
-
-        #         for k in thread[i+1-cpu:(i+1)]:
-        #             k.join()
-
-        #     elif (i+1) == len(thread) and (i+1) % cpu != 0:
-        #         # Wait for the last processes to finish if number of processes is not a multiple
-        #         # of -cpu-
-
-        #         for k in thread[(i+1 - (i+1) % cpu):]:
-        #             k.join()
+        # Mask images
+        for i in range(image_shape[0]):
+            images[i, :, :] = self.mask(images[i, :, :])
 
         history = "Number of frames removed ="+""
+
+        self.m_image_out_port.set_all(images)
+        self.m_image_out_port_rem.set_all(images)
+        self.m_image_out_port_std.set_all(images)
 
         self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
         self.m_image_out_port_rem.copy_attributes_from_input_port(self.m_image_in_port)
         self.m_image_out_port_std.copy_attributes_from_input_port(self.m_image_in_port)
 
         self.m_image_out_port.add_history_information("FrameSelectionModule", history)
+
+        sys.stdout.write("\rRunning VisirFrameSelectionModule...[DONE]\n")
+        sys.stdout.flush()
 
         self.m_image_out_port.close_port()
         self.m_image_out_port_rem.close_port()
