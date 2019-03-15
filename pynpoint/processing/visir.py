@@ -920,17 +920,18 @@ class VisirNodAdditionModule(ProcessingModule):
                              "\nDid you run AngleInterpolation before?".format(len(data[:, 0, 0]),
                                                                                len(posang_1)))
 
+        index = min(len(posang_1), len(posang_2))
         if len(posang_1) != len(posang_2):
             raise UserWarning("Attribute --PARANG-- in the central database has a different size "
                               "for the two input cubes. \nImage_in_tag_1 --PARANG-- size: {1}, "
                               "Image_in_tag_2 --PARANG-- size: {2}. Reducing to size {3}"
                               "".format(len(posang_1),
                                         len(posang_2),
-                                        min(len(posang_1), len(posang_2))))
+                                        index))
 
         data_out = np.zeros(data.shape)
 
-        for i in range(len(posang_1)):
+        for i in range(index):
             data_out[i, :, :] = rotate(input=data[i, :, :],
                                        angle=posang_1[i]-posang_2[i],
                                        reshape=False)
@@ -960,9 +961,6 @@ class VisirNodAdditionModule(ProcessingModule):
         # Rotate second image set
         if self.m_pupil is True:
             data_2 = self.rotation(data_2)
-
-        else:
-            pass
 
         data_output[:, :, :] = data_1[:index, :, :] + data_2[:index, :, :]
 
