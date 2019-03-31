@@ -14,9 +14,9 @@ from pynpoint.core.processing import ReadingModule, ProcessingModule
 from pynpoint.util.module import progress, locate_star, memory_frames
 from pynpoint.core.attributes import get_attributes
 import threading
-import multiprocessing as mp
-from functools import partial
-import ctypes
+# import multiprocessing as mp
+# from functools import partial
+# import ctypes
 from scipy.ndimage import rotate
 
 
@@ -301,35 +301,31 @@ class VisirInitializationModule(ReadingModule):
                                     self.m_image_out_port_1.append_attribute_data(
                                         "PARANG", 0.)
                                     self.m_image_out_port_1.append_attribute_data(
-                                        "PARANG_END", 0.0001)
+                                        "PARANG_END", 1.e-4)
                                     self.m_image_out_port_2.append_attribute_data(
                                         "PARANG_START", 0.)
                                     self.m_image_out_port_2.append_attribute_data(
                                         "PARANG", 0.)
                                     self.m_image_out_port_2.append_attribute_data(
-                                        "PARANG_END", 0.0001)
+                                        "PARANG_END", 1.e-4)
                                     self.m_image_out_port_3.append_attribute_data(
                                         "PARANG_START", 0.)
                                     self.m_image_out_port_3.append_attribute_data(
                                         "PARANG", 0.)
                                     self.m_image_out_port_3.append_attribute_data(
-                                        "PARANG_END", 0.0001)
+                                        "PARANG_END", 1.e-4)
                                     self.m_image_out_port_4.append_attribute_data(
                                         "PARANG_START", 0.)
                                     self.m_image_out_port_4.append_attribute_data(
                                         "PARANG", 0.)
                                     self.m_image_out_port_4.append_attribute_data(
-                                        "PARANG_END", 0.0001)
+                                        "PARANG_END", 1.e-4)
 
                                 elif fitskey == "ESO ADA PUPILPOS":
-                                    self.m_image_out_port_1.append_attribute_data(
-                                        item, 0.)
-                                    self.m_image_out_port_2.append_attribute_data(
-                                        item, 0.)
-                                    self.m_image_out_port_3.append_attribute_data(
-                                        item, 0.)
-                                    self.m_image_out_port_4.append_attribute_data(
-                                        item, 0.)
+                                    self.m_image_out_port_1.append_attribute_data(item, 0.)
+                                    self.m_image_out_port_2.append_attribute_data(item, 0.)
+                                    self.m_image_out_port_3.append_attribute_data(item, 0.)
+                                    self.m_image_out_port_4.append_attribute_data(item, 0.)
 
                             else:
                                 warnings.warn("Non-static attribute %s (=%s) not found in the "
@@ -542,8 +538,8 @@ class VisirInitializationModule(ReadingModule):
             header.append(("NAXIS3", nimages))
 
         # Put them in different fit/chop files
-        chopa = np.zeros((int(nimages/2 + 1), image.shape[0], image.shape[1]), dtype=np.float32)
-        chopb = np.zeros((int(nimages/2 + 1), image.shape[0], image.shape[1]), dtype=np.float32)
+        chopa = np.zeros((int(nimages), image.shape[0], image.shape[1]), dtype=np.float32)
+        chopb = np.zeros((int(nimages), image.shape[0], image.shape[1]), dtype=np.float32)
 
         images = np.zeros((nimages, image.shape[0], image.shape[1]))
         for i in range(1, nimages+1):
@@ -717,10 +713,13 @@ class VisirInitializationModule(ReadingModule):
             self._non_static_attributes(header)
             self._extra_attributes(files[i], location, shape, nod)
 
-            self.m_image_out_port_1.flush()
-            self.m_image_out_port_2.flush()
-            self.m_image_out_port_3.flush()
-            self.m_image_out_port_4.flush()
+            # Only flush when output ports contain data
+            if nod == "A":
+                self.m_image_out_port_1.flush()
+                self.m_image_out_port_2.flush()
+            if nod == "B":
+                self.m_image_out_port_3.flush()
+                self.m_image_out_port_4.flush()
 
             elapsed = timeit.default_timer() - start_time
             sys.stdout.write(
