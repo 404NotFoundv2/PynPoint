@@ -11,6 +11,7 @@ htmlcov/
 coverage.xml
 .coverage
 .coverage.*
+.idea/
 .tox/
 junit-docs-ci.xml
 junit-py27.xml
@@ -22,8 +23,12 @@ docs/_build
 
 # Mac
 .DS_Store
+.vscode
+.vscode/settings.json
 
 # Vim
 .vim
 *.tags
 .tags
+
+
