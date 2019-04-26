@@ -452,7 +452,8 @@ class NearInitializationModule(ReadingModule):
             nod = head['ESO SEQ NODPOS']
 
         except KeyError:
-            warnings.warn("Keyword 'ESO SEQ NODPOS' cannot be found. Assuming ABBA NOD scheme")
+            if number == 0:
+                warnings.warn("Keyword 'ESO SEQ NODPOS' cannot be found. Assuming ABBA NOD scheme")
 
             if (number % 4) == 0 or (number % 4) == 3:
                 nod = 'A'
@@ -522,7 +523,7 @@ class NearInitializationModule(ReadingModule):
         # Check if the files are compressed, if so; uncompress
         self.uncompress()
 
-        sys.stdout.write("\rRunning VISIRInitializationModule...")
+        sys.stdout.write("\rRunning NEARInitializationModule...")
         sys.stdout.flush()
 
         # Open each fit file
@@ -538,7 +539,7 @@ class NearInitializationModule(ReadingModule):
         assert(files), "No FITS files found in {}".format(self.m_im_dir)
 
         for i, im in enumerate(files):
-            progress(i, len(files), "\rRunning VISIRInitializationModule...")
+            progress(i, len(files), "\rRunning NEARInitializationModule...")
 
             chopa, chopb, nod, header, shape = self.open_fit(location, im, i)
 
