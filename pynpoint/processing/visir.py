@@ -734,10 +734,10 @@ class VisirInitializationModule(ReadingModule):
         sys.stdout.write("\rRunning VISIRInitializationModule...[DONE]\n")
         sys.stdout.flush()
 
-        self.m_image_out_port_1.add_history_information("VisirBurstModule", "Nod A, Chop A")
-        self.m_image_out_port_2.add_history_information("VisirBurstModule", "Nod A, Chop B")
-        self.m_image_out_port_3.add_history_information("VisirBurstModule", "Nod B, Chop A")
-        self.m_image_out_port_4.add_history_information("VisirBurstModule", "Nod B, Chop B")
+        self.m_image_out_port_1.add_history("VisirBurstModule", "Nod A, Chop A")
+        self.m_image_out_port_2.add_history("VisirBurstModule", "Nod A, Chop B")
+        self.m_image_out_port_3.add_history("VisirBurstModule", "Nod B, Chop A")
+        self.m_image_out_port_4.add_history("VisirBurstModule", "Nod B, Chop B")
         self.m_image_out_port_1.close_port()
         self.m_image_out_port_2.close_port()
         self.m_image_out_port_3.close_port()
@@ -796,9 +796,9 @@ class VisirAngleInterpolationModule(ProcessingModule):
             parang_end = self.m_data_in_port.get_attribute("PARANG_END")
 
             steps = self.m_data_in_port.get_attribute("NFRAMES")
-            print("Number of frames: ", self.m_data_in_port.get_shape()[0])
-            print("Number of cubes: ", len(steps))
-            print("Left over?: ", self.m_data_in_port.get_shape()[0]/len(steps))
+            # print("Number of frames: ", self.m_data_in_port.get_shape()[0])
+            # print("Number of cubes: ", len(steps))
+            # print("Left over?: ", self.m_data_in_port.get_shape()[0]/len(steps))
 
             if sum(steps) != self.m_data_in_port.get_shape()[0]:
                 cubes = len(steps)
@@ -838,7 +838,7 @@ class VisirAngleInterpolationModule(ProcessingModule):
         sys.stdout.write("\rRunning VisirAngleInterpolationModule... [DONE]\n")
         sys.stdout.flush()
 
-        self.m_data_out_port.copy_attributes_from_input_port(self.m_data_in_port)
+        self.m_data_out_port.copy_attributes(self.m_data_in_port)
         self.m_data_out_port.add_attribute("PARANG", new_angles, static=False)
 
         self.m_data_out_port.close_port()
