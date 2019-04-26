@@ -5,7 +5,7 @@ import numpy as np
 import sys
 from pynpoint.core.processing import ProcessingModule
 from pynpoint.util.module import progress, memory_frames, \
-                             number_images_port, locate_star
+                             locate_star
 import math
 import warnings
 

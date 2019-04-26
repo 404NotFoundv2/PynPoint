@@ -90,6 +90,7 @@ from pynpoint.processing.visir import VisirInitializationModule, \
                                       # VisirFrameSelectionModule
 
 from pynpoint.processing.VisirFrameSelection import VisirFrameSelectionModule
+from pynpoint.processing.near import NearInitializationModule
 #from pynpoint.processing.VisirFrameSelection import VisirFrameSelectionModule
 #from pynpoint.processing.VisirInitialization import VisirInitializationModule
 #from pynpoint.processing.VisirInverter import VisirInverterModule
