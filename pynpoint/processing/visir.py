@@ -965,8 +965,8 @@ class VisirNodAdditionModule(ProcessingModule):
 
         self.m_image_out_port.set_all(data_output)
 
-        self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port1)
-        self.m_image_out_port.add_history_information("VisirNodAdditionModule", "Combined Nod")
+        self.m_image_out_port.copy_attributes(self.m_image_in_port1)
+        self.m_image_out_port.add_history("VisirNodAdditionModule", "Combined Nod")
 
         sys.stdout.write("\rRunning VISIRNodAdditionModule... [DONE]\n")
         sys.stdout.flush()
@@ -1028,9 +1028,8 @@ class VisirInverterModule(ProcessingModule):
 
             self.m_image_out_port.append(images)
 
-        self.m_image_out_port.copy_attributes_from_input_port(self.m_image_in_port)
-        self.m_image_out_port.add_history_information("VisirInverterModule",
-                                                      "Inverted the images")
+        self.m_image_out_port.copy_attributes(self.m_image_in_port)
+        self.m_image_out_port.add_history("VisirInverterModule", "Inverted the images")
 
         self.m_image_out_port.close_port()
 
