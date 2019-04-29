@@ -467,10 +467,19 @@ class NoddingBackgroundModule(ProcessingModule):
                              self.m_index))
 
         exp_no_sky = self.m_sky_in_port.get_attribute("EXP_NO")
+        # print("exp_no_sky old: ", exp_no_sky)
+        exp_no_sky = exp_no_sky[:10]
+        # print("exp_no_sky: ", exp_no_sky)
         exp_no_science = self.m_science_in_port.get_attribute("EXP_NO")
+        # print("exp_no_science old: ", exp_no_science)
+        exp_no_science = exp_no_science[:10]
+        # print("exp_no_science: ", exp_no_science)
 
         nframes_sky = self.m_sky_in_port.get_attribute("NFRAMES")
+        # print("nframes sky: ", nframes_sky, len(nframes_sky))
         nframes_science = self.m_science_in_port.get_attribute("NFRAMES")
+        nframes_science = nframes_science[::2] // 2
+        # print("nframes science: ", nframes_science, len(nframes_science))
 
         if np.all(nframes_sky != 1):
             warnings.warn("The NFRAMES values of the sky images are not all equal to unity. "

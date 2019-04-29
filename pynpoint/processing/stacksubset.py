@@ -342,6 +342,7 @@ class StackCubesModule(ProcessingModule):
 
         non_static = self.m_image_in_port.get_all_non_static_attributes()
         nframes = self.m_image_in_port.get_attribute("NFRAMES")
+        nframes = nframes // 4
 
         if "PARANG" in non_static:
             parang = self.m_image_in_port.get_attribute("PARANG")

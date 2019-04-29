@@ -118,7 +118,10 @@ def contrast_limit(path_images,
 
     # Magnitude of the injected planet
     flux_in = snr_inject*t_noise
+    # print('flux_in: ', flux_in)
+    # print('flux_in/star: ', flux_in/star)
     mag = -2.5*math.log10(flux_in/star)
+    print('mag: ', mag)
 
     # Inject the fake planet
     fake = fake_planet(images=images,

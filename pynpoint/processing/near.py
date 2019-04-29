@@ -27,6 +27,7 @@ class NearInitializationModule(ReadingModule):
                  image_out_tag_2="noda_chopb",
                  image_out_tag_3="nodb_chopa",
                  image_out_tag_4="nodb_chopb",
+                 # scheme='ABBA',
                  burst=False,
                  check=True,
                  overwrite=True):
@@ -65,6 +66,7 @@ class NearInitializationModule(ReadingModule):
 
         # Parameters
         self.m_im_dir = image_in_dir
+        # self.m_scheme = scheme
         self.m_burst = burst
         self.m_check = check
         self.m_overwrite = overwrite
@@ -103,6 +105,9 @@ class NearInitializationModule(ReadingModule):
                 raise ValueError("Output ports should have different tags")
             if i not in seen:
                 seen.add(i)
+
+        # if self.m_scheme != 'ABBA' and self.m_scheme != 'ABAB':
+        #     raise ValueError("Scheme keyword should be set to 'ABBA' or 'ABAB'")
 
         if not isinstance(self.m_burst, bool):
             raise ValueError("Burst port should be set to 'True' or 'False'")
