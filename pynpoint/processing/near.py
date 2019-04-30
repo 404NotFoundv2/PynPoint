@@ -28,7 +28,6 @@ class NearInitializationModule(ReadingModule):
                  image_out_tag_3="nodb_chopa",
                  image_out_tag_4="nodb_chopb",
                  # scheme='ABBA',
-                 burst=False,
                  check=True,
                  overwrite=True):
         '''
@@ -45,8 +44,6 @@ class NearInitializationModule(ReadingModule):
         :type image_out_tag_3: str
         :param image_out_tag_1: Entry written as output, Nod B -> Chop B
         :type image_out_tag_4: str
-        :param burst: Whether the data is taken in burst mode or not
-        :type burst: bool
         :param check: Check all the listed non-static attributes or ignore the attributes that
                       are not always required (e.g. PARANG_START, DITHER_X).
         :type check: bool
@@ -66,10 +63,9 @@ class NearInitializationModule(ReadingModule):
 
         # Parameters
         self.m_im_dir = image_in_dir
-        # self.m_scheme = scheme
-        self.m_burst = burst
         self.m_check = check
         self.m_overwrite = overwrite
+        # self.m_scheme = scheme
 
         # Arguments
         self.m_static = []
@@ -108,9 +104,6 @@ class NearInitializationModule(ReadingModule):
 
         # if self.m_scheme != 'ABBA' and self.m_scheme != 'ABAB':
         #     raise ValueError("Scheme keyword should be set to 'ABBA' or 'ABAB'")
-
-        if not isinstance(self.m_burst, bool):
-            raise ValueError("Burst port should be set to 'True' or 'False'")
 
         if not isinstance(self.m_check, bool):
             raise ValueError("Check port should be set to 'True' or 'False'")
